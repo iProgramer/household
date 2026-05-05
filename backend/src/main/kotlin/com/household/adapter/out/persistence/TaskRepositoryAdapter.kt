@@ -2,6 +2,7 @@ package com.household.adapter.out.persistence
 
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.MemberId
+import com.household.domain.model.ProjectId
 import com.household.domain.model.RecurrenceRule
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
@@ -35,6 +36,9 @@ class TaskRepositoryAdapter(
         jpa.findAllByHouseholdIdAndDateIsNullAndStatus(householdId.value, TaskStatus.OPEN.name)
             .map { it.toDomain() }
 
+    override fun findAllByProjectId(projectId: ProjectId): List<Task> =
+        jpa.findAllByProjectId(projectId.value).map { it.toDomain() }
+
     private fun Task.toJpaEntity() = TaskJpaEntity(
         id = id.value,
         householdId = householdId.value,
@@ -44,6 +48,7 @@ class TaskRepositoryAdapter(
         status = status.name,
         recurrenceType = recurrenceRule?.typeName(),
         recurrenceWeekday = (recurrenceRule as? RecurrenceRule.OnWeekday)?.dayOfWeek?.name,
+        projectId = projectId?.value,
     )
 
     private fun TaskJpaEntity.toDomain() = Task(
@@ -54,6 +59,7 @@ class TaskRepositoryAdapter(
         assignedTo = assignedTo?.let { MemberId(it) },
         status = TaskStatus.valueOf(status),
         recurrenceRule = toRecurrenceRule(recurrenceType, recurrenceWeekday),
+        projectId = projectId?.let { ProjectId(it) },
     )
 
     private fun RecurrenceRule.typeName(): String = when (this) {

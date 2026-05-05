@@ -2,6 +2,7 @@ package com.household.adapter.`in`.web
 
 import com.household.adapter.`in`.web.security.AuthenticatedMember
 import com.household.domain.model.MemberId
+import com.household.domain.model.ProjectId
 import com.household.domain.model.RecurrenceRule
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
@@ -55,6 +56,7 @@ class TaskController(
                 date = request.date,
                 assignedTo = request.assignedTo?.let { MemberId(it) },
                 recurrenceRule = request.recurrence?.toDomain(),
+                projectId = request.projectId?.let { ProjectId(it) },
             )
         )
     )
@@ -98,6 +100,7 @@ data class CreateTaskRequest(
     val date: LocalDate? = null,
     val assignedTo: UUID? = null,
     val recurrence: RecurrenceRequest? = null,
+    val projectId: UUID? = null,
 )
 
 data class UpdateTaskRequest(
@@ -127,6 +130,7 @@ data class TaskResponse(
     val assignedTo: UUID?,
     val status: TaskStatus,
     val recurrence: RecurrenceResponse?,
+    val projectId: UUID?,
 ) {
     companion object {
         fun from(task: Task) = TaskResponse(
@@ -136,6 +140,7 @@ data class TaskResponse(
             assignedTo = task.assignedTo?.value,
             status = task.status,
             recurrence = task.recurrenceRule?.toResponse(),
+            projectId = task.projectId?.value,
         )
     }
 }

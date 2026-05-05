@@ -14,6 +14,7 @@ data class Task(
     val assignedTo: MemberId?,
     val status: TaskStatus,
     val recurrenceRule: RecurrenceRule? = null,
+    val projectId: ProjectId? = null,
 ) {
     companion object {
         fun create(
@@ -22,6 +23,7 @@ data class Task(
             date: LocalDate?,
             assignedTo: MemberId? = null,
             recurrenceRule: RecurrenceRule? = null,
+            projectId: ProjectId? = null,
         ): Task {
             require(title.isNotBlank()) { "Title must not be blank" }
             return Task(
@@ -32,6 +34,7 @@ data class Task(
                 assignedTo = assignedTo,
                 status = TaskStatus.OPEN,
                 recurrenceRule = recurrenceRule,
+                projectId = projectId,
             )
         }
     }
@@ -50,6 +53,7 @@ data class Task(
             assignedTo = assignedTo,
             status = TaskStatus.OPEN,
             recurrenceRule = recurrenceRule,
+            projectId = projectId,
         )
     }
 }

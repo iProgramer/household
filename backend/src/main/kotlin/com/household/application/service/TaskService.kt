@@ -25,7 +25,7 @@ class TaskService(
     CompleteTaskUseCase, UpdateTaskUseCase {
 
     override fun create(command: CreateTaskCommand): Task =
-        taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo, command.recurrenceRule))
+        taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo, command.recurrenceRule, command.projectId))
 
     @Transactional(readOnly = true)
     override fun getTodayTasks(householdId: HouseholdId): List<Task> =
