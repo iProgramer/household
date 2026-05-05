@@ -7,6 +7,8 @@ import java.time.LocalDate
 
 interface TaskRepository {
     fun save(task: Task): Task
-    fun findAllByHouseholdIdAndDate(householdId: HouseholdId, date: LocalDate): List<Task>
     fun findById(id: TaskId): Task?
+    fun findAllByHouseholdIdAndDate(householdId: HouseholdId, date: LocalDate): List<Task>
+    fun findAllByHouseholdIdAndDateBetween(householdId: HouseholdId, start: LocalDate, end: LocalDate): List<Task>
+    fun findAllOpenByHouseholdIdAndDateIsNull(householdId: HouseholdId): List<Task>
 }

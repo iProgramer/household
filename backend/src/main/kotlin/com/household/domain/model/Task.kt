@@ -34,6 +34,8 @@ data class Task(
     }
 
     fun complete(): Task = copy(status = TaskStatus.DONE)
+    fun reschedule(newDate: LocalDate?): Task = copy(date = newDate)
+    fun reassign(memberId: MemberId?): Task = copy(assignedTo = memberId)
 }
 
 enum class TaskStatus { OPEN, DONE }

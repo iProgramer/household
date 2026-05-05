@@ -116,6 +116,60 @@ class CreateAndCompleteTaskScenarioTest {
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
     }
 
+    @Test
+    fun `create unplanned task, schedule it, then find it in week view`() {
+        val token = registerAndGetToken("planner-${System.nanoTime()}@example.com")
+
+        // 1. Unplanned task anlegen
+        val createResponse = restTemplate.postForEntity(
+            "/api/tasks",
+            HttpEntity(mapOf("title" to "Fenster putzen"), authHeaders(token)),
+            Map::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, createResponse.statusCode)
+        val taskId = createResponse.body!!["id"] as String
+
+        // 2. In der unplanned list sehen
+        val unplannedResponse = restTemplate.exchange(
+            "/api/tasks/unplanned", HttpMethod.GET,
+            HttpEntity<Void>(authHeaders(token)), List::class.java,
+        )
+        assertEquals(HttpStatus.OK, unplannedResponse.statusCode)
+        @Suppress("UNCHECKED_CAST")
+        val unplannedTitles = (unplannedResponse.body!! as List<Map<*, *>>).map { it["title"] }
+        assertTrue("Fenster putzen" in unplannedTitles)
+
+        // 3. Task auf Montag dieser Woche einplanen (PATCH)
+        val monday = LocalDate.now().with(java.time.DayOfWeek.MONDAY)
+        val patchResponse = restTemplate.exchange(
+            "/api/tasks/$taskId", HttpMethod.PATCH,
+            HttpEntity(mapOf("date" to monday.toString()), authHeaders(token)),
+            Map::class.java,
+        )
+        assertEquals(HttpStatus.OK, patchResponse.statusCode)
+        assertEquals(monday.toString(), patchResponse.body!!["date"])
+
+        // 4. In der Wochenansicht erscheinen
+        val weekStart = monday
+        val weekResponse = restTemplate.exchange(
+            "/api/tasks/week?startDate=$weekStart", HttpMethod.GET,
+            HttpEntity<Void>(authHeaders(token)), List::class.java,
+        )
+        assertEquals(HttpStatus.OK, weekResponse.statusCode)
+        @Suppress("UNCHECKED_CAST")
+        val weekTitles = (weekResponse.body!! as List<Map<*, *>>).map { it["title"] }
+        assertTrue("Fenster putzen" in weekTitles)
+
+        // 5. Nicht mehr in der unplanned list
+        val unplannedAfterResponse = restTemplate.exchange(
+            "/api/tasks/unplanned", HttpMethod.GET,
+            HttpEntity<Void>(authHeaders(token)), List::class.java,
+        )
+        @Suppress("UNCHECKED_CAST")
+        val unplannedAfterTitles = (unplannedAfterResponse.body!! as List<Map<*, *>>).map { it["title"] }
+        assertTrue("Fenster putzen" !in unplannedAfterTitles)
+    }
+
     private fun registerAndGetToken(email: String): String {
         val response = restTemplate.postForEntity(
             "/api/auth/register",

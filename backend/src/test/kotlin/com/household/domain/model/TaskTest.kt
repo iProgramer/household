@@ -85,6 +85,56 @@ class TaskTest {
         assert(a.id != b.id)
     }
 
+    @Test
+    fun `reschedule sets new date`() {
+        val task = Task.create(HOUSEHOLD_ID, "Staubsaugen", null)
+        val newDate = LocalDate.of(2026, 5, 10)
+
+        val rescheduled = task.reschedule(newDate)
+
+        assertEquals(newDate, rescheduled.date)
+    }
+
+    @Test
+    fun `reschedule to null clears date`() {
+        val task = Task.create(HOUSEHOLD_ID, "Staubsaugen", LocalDate.of(2026, 5, 5))
+
+        val rescheduled = task.reschedule(null)
+
+        assertNull(rescheduled.date)
+    }
+
+    @Test
+    fun `reschedule returns new instance, original unchanged`() {
+        val original = Task.create(HOUSEHOLD_ID, "Staubsaugen", LocalDate.of(2026, 5, 5))
+        val newDate = LocalDate.of(2026, 5, 10)
+
+        val rescheduled = original.reschedule(newDate)
+
+        assertNotSame(original, rescheduled)
+        assertEquals(LocalDate.of(2026, 5, 5), original.date)
+    }
+
+    @Test
+    fun `reassign sets new member`() {
+        val task = Task.create(HOUSEHOLD_ID, "Staubsaugen", null)
+        val memberId = MemberId(UUID.randomUUID())
+
+        val reassigned = task.reassign(memberId)
+
+        assertEquals(memberId, reassigned.assignedTo)
+    }
+
+    @Test
+    fun `reassign to null clears assignment`() {
+        val memberId = MemberId(UUID.randomUUID())
+        val task = Task.create(HOUSEHOLD_ID, "Staubsaugen", null, assignedTo = memberId)
+
+        val reassigned = task.reassign(null)
+
+        assertNull(reassigned.assignedTo)
+    }
+
     companion object {
         val HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
     }

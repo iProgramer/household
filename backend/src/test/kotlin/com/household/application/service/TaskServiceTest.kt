@@ -7,6 +7,7 @@ import com.household.domain.model.TaskId
 import com.household.domain.model.TaskNotFoundException
 import com.household.domain.model.TaskStatus
 import com.household.domain.port.`in`.CreateTaskCommand
+import com.household.domain.port.`in`.UpdateTaskCommand
 import com.household.domain.port.out.TaskRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -94,6 +95,77 @@ class TaskServiceTest {
         val result = service.getTodayTasks(HOUSEHOLD_ID)
 
         assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `getWeekTasks delegates to repository with correct date range`() {
+        val start = LocalDate.of(2026, 5, 4)
+        val end = start.plusDays(6)
+        every { taskRepository.findAllByHouseholdIdAndDateBetween(HOUSEHOLD_ID, start, end) } returns emptyList()
+
+        service.getWeekTasks(HOUSEHOLD_ID, start)
+
+        verify { taskRepository.findAllByHouseholdIdAndDateBetween(HOUSEHOLD_ID, start, end) }
+    }
+
+    @Test
+    fun `getWeekTasks returns tasks from repository`() {
+        val start = LocalDate.of(2026, 5, 4)
+        val tasks = listOf(
+            Task.create(HOUSEHOLD_ID, "Montag", start),
+            Task.create(HOUSEHOLD_ID, "Mittwoch", start.plusDays(2)),
+        )
+        every { taskRepository.findAllByHouseholdIdAndDateBetween(HOUSEHOLD_ID, start, start.plusDays(6)) } returns tasks
+
+        val result = service.getWeekTasks(HOUSEHOLD_ID, start)
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `getUnplannedTasks delegates to repository`() {
+        every { taskRepository.findAllOpenByHouseholdIdAndDateIsNull(HOUSEHOLD_ID) } returns emptyList()
+
+        service.getUnplannedTasks(HOUSEHOLD_ID)
+
+        verify { taskRepository.findAllOpenByHouseholdIdAndDateIsNull(HOUSEHOLD_ID) }
+    }
+
+    @Test
+    fun `getUnplannedTasks returns open tasks without date`() {
+        val tasks = listOf(Task.create(HOUSEHOLD_ID, "Irgendwann", null))
+        every { taskRepository.findAllOpenByHouseholdIdAndDateIsNull(HOUSEHOLD_ID) } returns tasks
+
+        val result = service.getUnplannedTasks(HOUSEHOLD_ID)
+
+        assertEquals(1, result.size)
+        assertEquals("Irgendwann", result[0].title)
+    }
+
+    @Test
+    fun `update reschedules and reassigns task`() {
+        val memberId = MemberId(UUID.randomUUID())
+        val task = Task.create(HOUSEHOLD_ID, "Aufgabe", null)
+        val newDate = LocalDate.of(2026, 5, 10)
+        val command = UpdateTaskCommand(task.id, newDate, memberId)
+        every { taskRepository.findById(task.id) } returns task
+        every { taskRepository.save(any()) } answers { firstArg() }
+
+        val result = service.update(command)
+
+        assertEquals(newDate, result.date)
+        assertEquals(memberId, result.assignedTo)
+        verify { taskRepository.save(match { it.date == newDate && it.assignedTo == memberId }) }
+    }
+
+    @Test
+    fun `update throws TaskNotFoundException when task does not exist`() {
+        val unknownId = TaskId(UUID.randomUUID())
+        every { taskRepository.findById(unknownId) } returns null
+
+        assertThrows<TaskNotFoundException> {
+            service.update(UpdateTaskCommand(unknownId, null, null))
+        }
     }
 
     companion object {

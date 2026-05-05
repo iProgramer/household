@@ -17,11 +17,21 @@ class TaskRepositoryAdapter(
     override fun save(task: Task): Task =
         jpa.save(task.toJpaEntity()).toDomain()
 
+    override fun findById(id: TaskId): Task? =
+        jpa.findById(id.value).map { it.toDomain() }.orElse(null)
+
     override fun findAllByHouseholdIdAndDate(householdId: HouseholdId, date: LocalDate): List<Task> =
         jpa.findAllByHouseholdIdAndDate(householdId.value, date).map { it.toDomain() }
 
-    override fun findById(id: TaskId): Task? =
-        jpa.findById(id.value).map { it.toDomain() }.orElse(null)
+    override fun findAllByHouseholdIdAndDateBetween(
+        householdId: HouseholdId,
+        start: LocalDate,
+        end: LocalDate,
+    ): List<Task> = jpa.findAllByHouseholdIdAndDateBetween(householdId.value, start, end).map { it.toDomain() }
+
+    override fun findAllOpenByHouseholdIdAndDateIsNull(householdId: HouseholdId): List<Task> =
+        jpa.findAllByHouseholdIdAndDateIsNullAndStatus(householdId.value, TaskStatus.OPEN.name)
+            .map { it.toDomain() }
 
     private fun Task.toJpaEntity() = TaskJpaEntity(
         id = id.value,

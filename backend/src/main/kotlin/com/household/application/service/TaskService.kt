@@ -8,6 +8,10 @@ import com.household.domain.port.`in`.CompleteTaskUseCase
 import com.household.domain.port.`in`.CreateTaskCommand
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
+import com.household.domain.port.`in`.GetUnplannedTasksUseCase
+import com.household.domain.port.`in`.GetWeekTasksUseCase
+import com.household.domain.port.`in`.UpdateTaskCommand
+import com.household.domain.port.`in`.UpdateTaskUseCase
 import com.household.domain.port.out.TaskRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +21,8 @@ import java.time.LocalDate
 @Transactional
 class TaskService(
     private val taskRepository: TaskRepository,
-) : CreateTaskUseCase, GetTodayTasksUseCase, CompleteTaskUseCase {
+) : CreateTaskUseCase, GetTodayTasksUseCase, GetWeekTasksUseCase, GetUnplannedTasksUseCase,
+    CompleteTaskUseCase, UpdateTaskUseCase {
 
     override fun create(command: CreateTaskCommand): Task =
         taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo))
@@ -26,8 +31,23 @@ class TaskService(
     override fun getTodayTasks(householdId: HouseholdId): List<Task> =
         taskRepository.findAllByHouseholdIdAndDate(householdId, LocalDate.now())
 
+    @Transactional(readOnly = true)
+    override fun getWeekTasks(householdId: HouseholdId, startDate: LocalDate): List<Task> =
+        taskRepository.findAllByHouseholdIdAndDateBetween(householdId, startDate, startDate.plusDays(6))
+
+    @Transactional(readOnly = true)
+    override fun getUnplannedTasks(householdId: HouseholdId): List<Task> =
+        taskRepository.findAllOpenByHouseholdIdAndDateIsNull(householdId)
+
     override fun complete(taskId: TaskId): Task {
         val task = taskRepository.findById(taskId) ?: throw TaskNotFoundException(taskId)
         return taskRepository.save(task.complete())
+    }
+
+    override fun update(command: UpdateTaskCommand): Task {
+        val task = taskRepository.findById(command.taskId) ?: throw TaskNotFoundException(command.taskId)
+        return taskRepository.save(
+            task.reschedule(command.date).reassign(command.assignedTo)
+        )
     }
 }

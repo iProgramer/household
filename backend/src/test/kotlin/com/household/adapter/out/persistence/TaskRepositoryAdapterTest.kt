@@ -1,6 +1,7 @@
 package com.household.adapter.out.persistence
 
 import com.household.domain.model.HouseholdId
+import com.household.domain.model.MemberId
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
@@ -95,6 +96,77 @@ class TaskRepositoryAdapterTest {
         val result = adapter.findById(TaskId(UUID.randomUUID()))
 
         assertNull(result)
+    }
+
+    @Test
+    fun `findAllByHouseholdIdAndDateBetween returns tasks within range`() {
+        val monday = LocalDate.of(2026, 5, 4)
+        val sunday = monday.plusDays(6)
+
+        adapter.save(Task.create(HOUSEHOLD_ID, "Montag", monday))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Sonntag", sunday))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Nächste Woche", sunday.plusDays(1)))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Ohne Datum", null))
+
+        val result = adapter.findAllByHouseholdIdAndDateBetween(HOUSEHOLD_ID, monday, sunday)
+
+        assertEquals(2, result.size)
+        val titles = result.map { it.title }
+        assert("Montag" in titles)
+        assert("Sonntag" in titles)
+    }
+
+    @Test
+    fun `findAllByHouseholdIdAndDateBetween excludes other households`() {
+        val start = LocalDate.of(2026, 5, 4)
+        val otherHousehold = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000002"))
+
+        adapter.save(Task.create(HOUSEHOLD_ID, "Unser Haushalt", start))
+        adapter.save(Task.create(otherHousehold, "Anderer Haushalt", start))
+
+        val result = adapter.findAllByHouseholdIdAndDateBetween(HOUSEHOLD_ID, start, start.plusDays(6))
+
+        assertEquals(1, result.size)
+        assertEquals("Unser Haushalt", result[0].title)
+    }
+
+    @Test
+    fun `findAllOpenByHouseholdIdAndDateIsNull returns only open tasks without date`() {
+        adapter.save(Task.create(HOUSEHOLD_ID, "Ohne Datum offen", null))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Mit Datum", LocalDate.now()))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Erledigt ohne Datum", null).complete())
+
+        val result = adapter.findAllOpenByHouseholdIdAndDateIsNull(HOUSEHOLD_ID)
+
+        assertEquals(1, result.size)
+        assertEquals("Ohne Datum offen", result[0].title)
+        assertEquals(TaskStatus.OPEN, result[0].status)
+        assertNull(result[0].date)
+    }
+
+    @Test
+    fun `findAllOpenByHouseholdIdAndDateIsNull excludes other households`() {
+        val otherHousehold = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000002"))
+
+        adapter.save(Task.create(HOUSEHOLD_ID, "Unser Haushalt", null))
+        adapter.save(Task.create(otherHousehold, "Anderer Haushalt", null))
+
+        val result = adapter.findAllOpenByHouseholdIdAndDateIsNull(HOUSEHOLD_ID)
+
+        assertEquals(1, result.size)
+        assertEquals("Unser Haushalt", result[0].title)
+    }
+
+    @Test
+    fun `save preserves assignment after update`() {
+        val memberId = MemberId(UUID.randomUUID())
+        val task = Task.create(HOUSEHOLD_ID, "Aufgabe", null)
+        val saved = adapter.save(task)
+
+        val reassigned = adapter.save(saved.reassign(memberId))
+
+        assertEquals(memberId, reassigned.assignedTo)
+        assertEquals(memberId, adapter.findById(saved.id)!!.assignedTo)
     }
 
     companion object {

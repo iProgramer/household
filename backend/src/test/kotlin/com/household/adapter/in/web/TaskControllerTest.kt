@@ -11,6 +11,9 @@ import com.household.domain.model.TaskNotFoundException
 import com.household.domain.port.`in`.CompleteTaskUseCase
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
+import com.household.domain.port.`in`.GetUnplannedTasksUseCase
+import com.household.domain.port.`in`.GetWeekTasksUseCase
+import com.household.domain.port.`in`.UpdateTaskUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
@@ -21,6 +24,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import java.time.LocalDate
 import java.util.UUID
@@ -42,7 +46,16 @@ class TaskControllerTest {
     lateinit var getTodayTasks: GetTodayTasksUseCase
 
     @MockkBean
+    lateinit var getWeekTasks: GetWeekTasksUseCase
+
+    @MockkBean
+    lateinit var getUnplannedTasks: GetUnplannedTasksUseCase
+
+    @MockkBean
     lateinit var completeTask: CompleteTaskUseCase
+
+    @MockkBean
+    lateinit var updateTask: UpdateTaskUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -156,6 +169,94 @@ class TaskControllerTest {
         }.andExpect {
             status { isNotFound() }
             jsonPath("$.error") { exists() }
+        }
+    }
+
+    @Test
+    fun `GET week returns tasks for given start date`() {
+        val start = LocalDate.of(2026, 5, 4)
+        val tasks = listOf(
+            Task.create(HOUSEHOLD_ID, "Montag-Aufgabe", start),
+            Task.create(HOUSEHOLD_ID, "Freitag-Aufgabe", start.plusDays(4)),
+        )
+        every { getWeekTasks.getWeekTasks(HOUSEHOLD_ID, start) } returns tasks
+
+        mockMvc.get("/api/tasks/week?startDate=2026-05-04") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.length()") { value(2) }
+            jsonPath("$[0].title") { value("Montag-Aufgabe") }
+        }
+    }
+
+    @Test
+    fun `GET week without token returns 401`() {
+        mockMvc.get("/api/tasks/week?startDate=2026-05-04").andExpect {
+            status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    fun `GET unplanned returns tasks without date`() {
+        val tasks = listOf(Task.create(HOUSEHOLD_ID, "Irgendwann", null))
+        every { getUnplannedTasks.getUnplannedTasks(HOUSEHOLD_ID) } returns tasks
+
+        mockMvc.get("/api/tasks/unplanned") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.length()") { value(1) }
+            jsonPath("$[0].title") { value("Irgendwann") }
+        }
+    }
+
+    @Test
+    fun `GET unplanned without token returns 401`() {
+        mockMvc.get("/api/tasks/unplanned").andExpect {
+            status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    fun `PATCH updates task and returns updated response`() {
+        val task = Task.create(HOUSEHOLD_ID, "Aufgabe", null)
+        val newDate = LocalDate.of(2026, 5, 10)
+        val updated = task.reschedule(newDate)
+        every { updateTask.update(any()) } returns updated
+
+        mockMvc.patch("/api/tasks/${task.id.value}") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"date": "2026-05-10"}"""
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.date") { value("2026-05-10") }
+            jsonPath("$.title") { value("Aufgabe") }
+        }
+    }
+
+    @Test
+    fun `PATCH returns 404 when task not found`() {
+        val unknownId = TaskId(UUID.randomUUID())
+        every { updateTask.update(any()) } throws TaskNotFoundException(unknownId)
+
+        mockMvc.patch("/api/tasks/${unknownId.value}") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"date": "2026-05-10"}"""
+        }.andExpect {
+            status { isNotFound() }
+        }
+    }
+
+    @Test
+    fun `PATCH without token returns 401`() {
+        mockMvc.patch("/api/tasks/${UUID.randomUUID()}") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"date": null}"""
+        }.andExpect {
+            status { isUnauthorized() }
         }
     }
 
