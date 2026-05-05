@@ -1,13 +1,13 @@
 package com.household.adapter.out.persistence
 
 import com.household.domain.model.HouseholdId
+import com.household.domain.model.MemberId
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
 import com.household.domain.port.out.TaskRepository
 import org.springframework.stereotype.Component
 import java.time.LocalDate
-import java.util.UUID
 
 @Component
 class TaskRepositoryAdapter(
@@ -28,6 +28,7 @@ class TaskRepositoryAdapter(
         householdId = householdId.value,
         title = title,
         date = date,
+        assignedTo = assignedTo?.value,
         status = status.name,
     )
 
@@ -36,6 +37,7 @@ class TaskRepositoryAdapter(
         householdId = HouseholdId(householdId),
         title = title,
         date = date,
+        assignedTo = assignedTo?.let { MemberId(it) },
         status = TaskStatus.valueOf(status),
     )
 }

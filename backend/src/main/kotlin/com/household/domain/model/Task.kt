@@ -11,16 +11,23 @@ data class Task(
     val householdId: HouseholdId,
     val title: String,
     val date: LocalDate?,
+    val assignedTo: MemberId?,
     val status: TaskStatus,
 ) {
     companion object {
-        fun create(householdId: HouseholdId, title: String, date: LocalDate?): Task {
+        fun create(
+            householdId: HouseholdId,
+            title: String,
+            date: LocalDate?,
+            assignedTo: MemberId? = null,
+        ): Task {
             require(title.isNotBlank()) { "Title must not be blank" }
             return Task(
                 id = TaskId(UUID.randomUUID()),
                 householdId = householdId,
                 title = title.trim(),
                 date = date,
+                assignedTo = assignedTo,
                 status = TaskStatus.OPEN,
             )
         }

@@ -17,6 +17,7 @@ class TaskTest {
         assertEquals("Staubsaugen", task.title)
         assertEquals(TaskStatus.OPEN, task.status)
         assertNull(task.date)
+        assertNull(task.assignedTo)
         assertEquals(HOUSEHOLD_ID, task.householdId)
     }
 
@@ -33,6 +34,14 @@ class TaskTest {
         val task = Task.create(HOUSEHOLD_ID, "Müll rausbringen", date)
 
         assertEquals(date, task.date)
+    }
+
+    @Test
+    fun `create task with assignment`() {
+        val memberId = MemberId(UUID.randomUUID())
+        val task = Task.create(HOUSEHOLD_ID, "Staubsaugen", null, assignedTo = memberId)
+
+        assertEquals(memberId, task.assignedTo)
     }
 
     @Test

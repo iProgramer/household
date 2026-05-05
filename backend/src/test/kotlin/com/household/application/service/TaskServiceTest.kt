@@ -1,6 +1,7 @@
 package com.household.application.service
 
 import com.household.domain.model.HouseholdId
+import com.household.domain.model.MemberId
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskNotFoundException
@@ -38,14 +39,16 @@ class TaskServiceTest {
     }
 
     @Test
-    fun `create passes date from command to task`() {
+    fun `create passes date and assignment from command`() {
         val date = LocalDate.of(2026, 5, 5)
-        val command = CreateTaskCommand(HOUSEHOLD_ID, "Termin", date)
+        val memberId = MemberId(UUID.randomUUID())
+        val command = CreateTaskCommand(HOUSEHOLD_ID, "Termin", date, assignedTo = memberId)
         every { taskRepository.save(any()) } answers { firstArg() }
 
         val result = service.create(command)
 
         assertEquals(date, result.date)
+        assertEquals(memberId, result.assignedTo)
     }
 
     @Test
