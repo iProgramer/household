@@ -7,8 +7,8 @@ Haushalts-App für einen Paarhaushalt (genau 2 Personen). Aufgaben-, Termin- und
 ## Tech-Stack
 
 - **Backend:** Kotlin, Hexagonal Architecture
-- **Frontend:** Noch offen
-- **Architektur:** Domain-driven, fachlich sauber geschnitten
+- **Frontend:** SvelteKit (SPA/PWA, TypeScript)
+- **Architektur:** Monorepo (`backend/` + `frontend/`), Domain-driven, fachlich sauber geschnitten
 
 ## Aktueller Stand
 

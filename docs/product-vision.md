@@ -17,7 +17,7 @@ Eine schlanke, geteilte Haushalts-App für genau zwei Personen. Sie macht sichtb
 
 1. **Schmaler Scope, hoher Nutzen.** Lieber wenige Dinge richtig als viele halbgar.
 2. **Zusammenarbeit ohne Overhead.** Kein Rollen-System, keine Berechtigungen – zwei gleichberechtigte Personen teilen sich alles.
-3. **Mobile-first.** Morgens kurz draufschauen, unterwegs abhaken, am Sonntag gemeinsam planen.
+3. **Mobile-first.** Morgens kurz draufschauen, unterwegs abhaken, am Sonntag gemeinsam planen. Technisch: responsive SvelteKit SPA (PWA).
 4. **Kein Kalender-Ersatz.** Feste Termine werden angezeigt, aber die App ersetzt keinen Google Calendar.
 5. **Projekte = Aufgaben mit Struktur.** Nicht mehr, nicht weniger.
 

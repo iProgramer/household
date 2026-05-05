@@ -1,0 +1,14 @@
+# Backend
+backend/.gradle
+backend/build/
+backend/.kotlin
+backend/.idea
+backend/*.iml
+
+# Frontend
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/build/
+
+# OS
+.DS_Store
