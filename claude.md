@@ -12,7 +12,7 @@ Haushalts-App für einen Paarhaushalt (genau 2 Personen). Aufgaben-, Termin- und
 
 ## Aktueller Stand
 
-Product Discovery abgeschlossen. Implementierung noch nicht begonnen.
+Iteration 1 implementiert: Task-CRUD (erstellen, Tagesansicht, abhaken) mit vollständiger Teststrategie.
 
 ## Wichtige Dokumente
 
@@ -36,3 +36,23 @@ Product Discovery abgeschlossen. Implementierung noch nicht begonnen.
 - Sprache in Code und Commits: Englisch
 - Sprache in Produktdokumentation: Deutsch
 - Domain-Begriffe: Household, Member, Task, Recurrence, Fixed Event, Project, Meal Note
+
+## Commit-Format
+
+```
+<short imperative header: what changed>
+
+<body: 2-3 sentences covering why this approach, key trade-offs, and what to watch out for>
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+```
+
+Beispiel:
+```
+Add hexagonal architecture skeleton for backend
+
+Ports and adapters keep the domain free of framework dependencies,
+making business logic testable without Spring context. The trade-off
+is more boilerplate compared to a layered architecture, which is
+acceptable given the long-term maintainability goal.
+```

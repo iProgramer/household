@@ -1,0 +1,33 @@
+package com.household.application.service
+
+import com.household.domain.model.HouseholdId
+import com.household.domain.model.Task
+import com.household.domain.model.TaskId
+import com.household.domain.model.TaskNotFoundException
+import com.household.domain.port.`in`.CompleteTaskUseCase
+import com.household.domain.port.`in`.CreateTaskCommand
+import com.household.domain.port.`in`.CreateTaskUseCase
+import com.household.domain.port.`in`.GetTodayTasksUseCase
+import com.household.domain.port.out.TaskRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+
+@Service
+@Transactional
+class TaskService(
+    private val taskRepository: TaskRepository,
+) : CreateTaskUseCase, GetTodayTasksUseCase, CompleteTaskUseCase {
+
+    override fun create(command: CreateTaskCommand): Task =
+        taskRepository.save(Task.create(command.householdId, command.title, command.date))
+
+    @Transactional(readOnly = true)
+    override fun getTodayTasks(householdId: HouseholdId): List<Task> =
+        taskRepository.findAllByHouseholdIdAndDate(householdId, LocalDate.now())
+
+    override fun complete(taskId: TaskId): Task {
+        val task = taskRepository.findById(taskId) ?: throw TaskNotFoundException(taskId)
+        return taskRepository.save(task.complete())
+    }
+}
