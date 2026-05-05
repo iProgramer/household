@@ -2,11 +2,13 @@ package com.household.adapter.out.persistence
 
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.MemberId
+import com.household.domain.model.RecurrenceRule
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
 import com.household.domain.port.out.TaskRepository
 import org.springframework.stereotype.Component
+import java.time.DayOfWeek
 import java.time.LocalDate
 
 @Component
@@ -40,6 +42,8 @@ class TaskRepositoryAdapter(
         date = date,
         assignedTo = assignedTo?.value,
         status = status.name,
+        recurrenceType = recurrenceRule?.typeName(),
+        recurrenceWeekday = (recurrenceRule as? RecurrenceRule.OnWeekday)?.dayOfWeek?.name,
     )
 
     private fun TaskJpaEntity.toDomain() = Task(
@@ -49,5 +53,24 @@ class TaskRepositoryAdapter(
         date = date,
         assignedTo = assignedTo?.let { MemberId(it) },
         status = TaskStatus.valueOf(status),
+        recurrenceRule = toRecurrenceRule(recurrenceType, recurrenceWeekday),
     )
+
+    private fun RecurrenceRule.typeName(): String = when (this) {
+        is RecurrenceRule.Daily -> "DAILY"
+        is RecurrenceRule.Weekly -> "WEEKLY"
+        is RecurrenceRule.Biweekly -> "BIWEEKLY"
+        is RecurrenceRule.Monthly -> "MONTHLY"
+        is RecurrenceRule.OnWeekday -> "ON_WEEKDAY"
+    }
+
+    private fun toRecurrenceRule(type: String?, weekday: String?): RecurrenceRule? = when (type) {
+        null -> null
+        "DAILY" -> RecurrenceRule.Daily
+        "WEEKLY" -> RecurrenceRule.Weekly
+        "BIWEEKLY" -> RecurrenceRule.Biweekly
+        "MONTHLY" -> RecurrenceRule.Monthly
+        "ON_WEEKDAY" -> RecurrenceRule.OnWeekday(DayOfWeek.valueOf(requireNotNull(weekday)))
+        else -> null
+    }
 }

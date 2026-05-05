@@ -15,4 +15,6 @@ class TaskJpaEntity(
     val date: LocalDate?,
     val assignedTo: UUID?,
     val status: String,
+    val recurrenceType: String? = null,
+    val recurrenceWeekday: String? = null,
 )

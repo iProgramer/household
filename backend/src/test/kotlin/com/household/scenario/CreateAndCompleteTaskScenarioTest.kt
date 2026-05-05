@@ -170,6 +170,53 @@ class CreateAndCompleteTaskScenarioTest {
         assertTrue("Fenster putzen" !in unplannedAfterTitles)
     }
 
+    @Test
+    fun `complete recurring task creates next occurrence in week view`() {
+        val token = registerAndGetToken("recurring-${System.nanoTime()}@example.com")
+
+        // Samstag dieser Woche als Zieldatum
+        val saturday = LocalDate.now().with(java.time.DayOfWeek.SATURDAY)
+
+        // Wiederkehrende Aufgabe anlegen (wöchentlich)
+        val createResponse = restTemplate.postForEntity(
+            "/api/tasks",
+            HttpEntity(
+                mapOf(
+                    "title" to "Bad putzen",
+                    "date" to saturday.toString(),
+                    "recurrence" to mapOf("type" to "WEEKLY"),
+                ),
+                authHeaders(token),
+            ),
+            Map::class.java,
+        )
+        assertEquals(HttpStatus.CREATED, createResponse.statusCode)
+        val taskId = createResponse.body!!["id"] as String
+        assertEquals("WEEKLY", (createResponse.body!!["recurrence"] as Map<*, *>)["type"])
+
+        // Aufgabe abschließen
+        val completeResponse = restTemplate.postForEntity(
+            "/api/tasks/$taskId/complete",
+            HttpEntity<Void>(authHeaders(token)),
+            Map::class.java,
+        )
+        assertEquals(HttpStatus.OK, completeResponse.statusCode)
+        assertEquals("DONE", completeResponse.body!!["status"])
+
+        // Nächste Woche sollte die neue Instanz erscheinen
+        val nextWeekStart = saturday.plusDays(1) // Sonntag nach dem Samstag
+        val weekResponse = restTemplate.exchange(
+            "/api/tasks/week?startDate=${nextWeekStart.minusDays(nextWeekStart.dayOfWeek.value.toLong() - 1)}",
+            HttpMethod.GET,
+            HttpEntity<Void>(authHeaders(token)),
+            List::class.java,
+        )
+        assertEquals(HttpStatus.OK, weekResponse.statusCode)
+        @Suppress("UNCHECKED_CAST")
+        val nextWeekTitles = (weekResponse.body!! as List<Map<*, *>>).map { it["title"] }
+        assertTrue("Bad putzen" in nextWeekTitles)
+    }
+
     private fun registerAndGetToken(email: String): String {
         val response = restTemplate.postForEntity(
             "/api/auth/register",

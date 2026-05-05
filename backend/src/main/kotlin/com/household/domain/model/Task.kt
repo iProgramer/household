@@ -13,6 +13,7 @@ data class Task(
     val date: LocalDate?,
     val assignedTo: MemberId?,
     val status: TaskStatus,
+    val recurrenceRule: RecurrenceRule? = null,
 ) {
     companion object {
         fun create(
@@ -20,6 +21,7 @@ data class Task(
             title: String,
             date: LocalDate?,
             assignedTo: MemberId? = null,
+            recurrenceRule: RecurrenceRule? = null,
         ): Task {
             require(title.isNotBlank()) { "Title must not be blank" }
             return Task(
@@ -29,6 +31,7 @@ data class Task(
                 date = date,
                 assignedTo = assignedTo,
                 status = TaskStatus.OPEN,
+                recurrenceRule = recurrenceRule,
             )
         }
     }
@@ -36,6 +39,19 @@ data class Task(
     fun complete(): Task = copy(status = TaskStatus.DONE)
     fun reschedule(newDate: LocalDate?): Task = copy(date = newDate)
     fun reassign(memberId: MemberId?): Task = copy(assignedTo = memberId)
+
+    fun nextOccurrence(): Task? {
+        if (recurrenceRule == null || date == null) return null
+        return Task(
+            id = TaskId(UUID.randomUUID()),
+            householdId = householdId,
+            title = title,
+            date = recurrenceRule.nextDate(date),
+            assignedTo = assignedTo,
+            status = TaskStatus.OPEN,
+            recurrenceRule = recurrenceRule,
+        )
+    }
 }
 
 enum class TaskStatus { OPEN, DONE }

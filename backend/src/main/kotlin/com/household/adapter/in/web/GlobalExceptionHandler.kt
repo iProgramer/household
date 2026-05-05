@@ -38,5 +38,10 @@ class GlobalExceptionHandler {
     fun handleHouseholdFull(e: HouseholdFullException): ErrorResponse =
         ErrorResponse(e.message ?: "Conflict")
 
+    @ExceptionHandler(IllegalArgumentException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleIllegalArgument(e: IllegalArgumentException): ErrorResponse =
+        ErrorResponse(e.message ?: "Bad request")
+
     data class ErrorResponse(val error: String)
 }

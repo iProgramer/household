@@ -2,6 +2,7 @@ package com.household.application.service
 
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.MemberId
+import com.household.domain.model.RecurrenceRule
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskNotFoundException
@@ -166,6 +167,41 @@ class TaskServiceTest {
         assertThrows<TaskNotFoundException> {
             service.update(UpdateTaskCommand(unknownId, null, null))
         }
+    }
+
+    @Test
+    fun `complete non-recurring task does not create next occurrence`() {
+        val task = Task.create(HOUSEHOLD_ID, "Einmalig", LocalDate.now())
+        every { taskRepository.findById(task.id) } returns task
+        every { taskRepository.save(any()) } answers { firstArg() }
+
+        service.complete(task.id)
+
+        verify(exactly = 1) { taskRepository.save(any()) }
+    }
+
+    @Test
+    fun `complete recurring task creates next occurrence`() {
+        val date = LocalDate.of(2026, 5, 9)
+        val task = Task.create(HOUSEHOLD_ID, "Bad putzen", date, recurrenceRule = RecurrenceRule.Weekly)
+        every { taskRepository.findById(task.id) } returns task
+        every { taskRepository.save(any()) } answers { firstArg() }
+
+        val result = service.complete(task.id)
+
+        assertEquals(TaskStatus.DONE, result.status)
+        verify(exactly = 2) { taskRepository.save(any()) }
+        verify { taskRepository.save(match { it.status == TaskStatus.OPEN && it.date == LocalDate.of(2026, 5, 16) }) }
+    }
+
+    @Test
+    fun `create passes recurrence rule from command`() {
+        val command = CreateTaskCommand(HOUSEHOLD_ID, "Bad putzen", LocalDate.now(), recurrenceRule = RecurrenceRule.Weekly)
+        every { taskRepository.save(any()) } answers { firstArg() }
+
+        val result = service.create(command)
+
+        assertEquals(RecurrenceRule.Weekly, result.recurrenceRule)
     }
 
     companion object {

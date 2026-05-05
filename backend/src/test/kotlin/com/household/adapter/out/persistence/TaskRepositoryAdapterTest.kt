@@ -2,6 +2,7 @@ package com.household.adapter.out.persistence
 
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.MemberId
+import com.household.domain.model.RecurrenceRule
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.UUID
 
@@ -167,6 +169,37 @@ class TaskRepositoryAdapterTest {
 
         assertEquals(memberId, reassigned.assignedTo)
         assertEquals(memberId, adapter.findById(saved.id)!!.assignedTo)
+    }
+
+    @Test
+    fun `save and retrieve task with weekly recurrence`() {
+        val task = Task.create(HOUSEHOLD_ID, "Bad putzen", LocalDate.now(), recurrenceRule = RecurrenceRule.Weekly)
+
+        val saved = adapter.save(task)
+        val found = adapter.findById(saved.id)!!
+
+        assertEquals(RecurrenceRule.Weekly, found.recurrenceRule)
+    }
+
+    @Test
+    fun `save and retrieve task with OnWeekday recurrence`() {
+        val rule = RecurrenceRule.OnWeekday(DayOfWeek.SATURDAY)
+        val task = Task.create(HOUSEHOLD_ID, "Wochenmarkt", LocalDate.now(), recurrenceRule = rule)
+
+        val saved = adapter.save(task)
+        val found = adapter.findById(saved.id)!!
+
+        assertEquals(rule, found.recurrenceRule)
+    }
+
+    @Test
+    fun `save task without recurrence has null recurrenceRule`() {
+        val task = Task.create(HOUSEHOLD_ID, "Einmalig", LocalDate.now())
+
+        val saved = adapter.save(task)
+        val found = adapter.findById(saved.id)!!
+
+        assertNull(found.recurrenceRule)
     }
 
     companion object {

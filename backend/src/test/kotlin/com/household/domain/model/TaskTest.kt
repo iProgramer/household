@@ -1,6 +1,7 @@
 package com.household.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -133,6 +134,55 @@ class TaskTest {
         val reassigned = task.reassign(null)
 
         assertNull(reassigned.assignedTo)
+    }
+
+    @Test
+    fun `nextOccurrence returns null when no recurrence rule`() {
+        val task = Task.create(HOUSEHOLD_ID, "Einmalig", LocalDate.of(2026, 5, 9))
+
+        assertNull(task.nextOccurrence())
+    }
+
+    @Test
+    fun `nextOccurrence returns null when no date`() {
+        val task = Task.create(HOUSEHOLD_ID, "Ungeplant", null, recurrenceRule = RecurrenceRule.Weekly)
+
+        assertNull(task.nextOccurrence())
+    }
+
+    @Test
+    fun `nextOccurrence returns new task with next date`() {
+        val date = LocalDate.of(2026, 5, 9) // Saturday
+        val task = Task.create(HOUSEHOLD_ID, "Bad putzen", date, recurrenceRule = RecurrenceRule.Weekly)
+
+        val next = task.nextOccurrence()
+
+        assertNotNull(next)
+        assertEquals(LocalDate.of(2026, 5, 16), next!!.date)
+        assertEquals("Bad putzen", next.title)
+        assertEquals(TaskStatus.OPEN, next.status)
+        assertEquals(RecurrenceRule.Weekly, next.recurrenceRule)
+    }
+
+    @Test
+    fun `nextOccurrence assigns new unique id`() {
+        val date = LocalDate.of(2026, 5, 9)
+        val task = Task.create(HOUSEHOLD_ID, "Bad putzen", date, recurrenceRule = RecurrenceRule.Daily)
+
+        val next = task.nextOccurrence()!!
+
+        assert(next.id != task.id)
+    }
+
+    @Test
+    fun `nextOccurrence preserves assignedTo`() {
+        val memberId = MemberId(UUID.randomUUID())
+        val date = LocalDate.of(2026, 5, 9)
+        val task = Task.create(HOUSEHOLD_ID, "Einkaufen", date, assignedTo = memberId, recurrenceRule = RecurrenceRule.Weekly)
+
+        val next = task.nextOccurrence()!!
+
+        assertEquals(memberId, next.assignedTo)
     }
 
     companion object {

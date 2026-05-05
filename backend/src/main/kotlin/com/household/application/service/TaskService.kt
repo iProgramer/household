@@ -25,7 +25,7 @@ class TaskService(
     CompleteTaskUseCase, UpdateTaskUseCase {
 
     override fun create(command: CreateTaskCommand): Task =
-        taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo))
+        taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo, command.recurrenceRule))
 
     @Transactional(readOnly = true)
     override fun getTodayTasks(householdId: HouseholdId): List<Task> =
@@ -41,7 +41,9 @@ class TaskService(
 
     override fun complete(taskId: TaskId): Task {
         val task = taskRepository.findById(taskId) ?: throw TaskNotFoundException(taskId)
-        return taskRepository.save(task.complete())
+        val completed = taskRepository.save(task.complete())
+        task.nextOccurrence()?.let { taskRepository.save(it) }
+        return completed
     }
 
     override fun update(command: UpdateTaskCommand): Task {

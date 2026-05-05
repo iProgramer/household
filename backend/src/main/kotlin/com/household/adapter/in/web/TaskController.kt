@@ -2,6 +2,7 @@ package com.household.adapter.`in`.web
 
 import com.household.adapter.`in`.web.security.AuthenticatedMember
 import com.household.domain.model.MemberId
+import com.household.domain.model.RecurrenceRule
 import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.UUID
 
@@ -52,6 +54,7 @@ class TaskController(
                 title = request.title,
                 date = request.date,
                 assignedTo = request.assignedTo?.let { MemberId(it) },
+                recurrenceRule = request.recurrence?.toDomain(),
             )
         )
     )
@@ -94,6 +97,7 @@ data class CreateTaskRequest(
     @field:NotBlank val title: String,
     val date: LocalDate? = null,
     val assignedTo: UUID? = null,
+    val recurrence: RecurrenceRequest? = null,
 )
 
 data class UpdateTaskRequest(
@@ -101,12 +105,28 @@ data class UpdateTaskRequest(
     val assignedTo: UUID? = null,
 )
 
+data class RecurrenceRequest(val type: String, val weekday: String? = null) {
+    fun toDomain(): RecurrenceRule = when (type.uppercase()) {
+        "DAILY" -> RecurrenceRule.Daily
+        "WEEKLY" -> RecurrenceRule.Weekly
+        "BIWEEKLY" -> RecurrenceRule.Biweekly
+        "MONTHLY" -> RecurrenceRule.Monthly
+        "ON_WEEKDAY" -> RecurrenceRule.OnWeekday(
+            DayOfWeek.valueOf(weekday?.uppercase() ?: throw IllegalArgumentException("weekday is required for ON_WEEKDAY"))
+        )
+        else -> throw IllegalArgumentException("Unknown recurrence type: $type")
+    }
+}
+
+data class RecurrenceResponse(val type: String, val weekday: String?)
+
 data class TaskResponse(
     val id: UUID,
     val title: String,
     val date: LocalDate?,
     val assignedTo: UUID?,
     val status: TaskStatus,
+    val recurrence: RecurrenceResponse?,
 ) {
     companion object {
         fun from(task: Task) = TaskResponse(
@@ -115,6 +135,15 @@ data class TaskResponse(
             date = task.date,
             assignedTo = task.assignedTo?.value,
             status = task.status,
+            recurrence = task.recurrenceRule?.toResponse(),
         )
     }
+}
+
+private fun RecurrenceRule.toResponse(): RecurrenceResponse = when (this) {
+    is RecurrenceRule.Daily -> RecurrenceResponse("DAILY", null)
+    is RecurrenceRule.Weekly -> RecurrenceResponse("WEEKLY", null)
+    is RecurrenceRule.Biweekly -> RecurrenceResponse("BIWEEKLY", null)
+    is RecurrenceRule.Monthly -> RecurrenceResponse("MONTHLY", null)
+    is RecurrenceRule.OnWeekday -> RecurrenceResponse("ON_WEEKDAY", dayOfWeek.name)
 }

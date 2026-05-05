@@ -260,6 +260,34 @@ class TaskControllerTest {
         }
     }
 
+    @Test
+    fun `POST creates recurring task and returns recurrence in response`() {
+        val task = Task.create(HOUSEHOLD_ID, "Bad putzen", LocalDate.of(2026, 5, 9), recurrenceRule = com.household.domain.model.RecurrenceRule.Weekly)
+        every { createTask.create(any()) } returns task
+
+        mockMvc.post("/api/tasks") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Bad putzen", "date": "2026-05-09", "recurrence": {"type": "WEEKLY"}}"""
+        }.andExpect {
+            status { isCreated() }
+            jsonPath("$.recurrence.type") { value("WEEKLY") }
+        }
+    }
+
+    @Test
+    fun `POST with unknown recurrence type returns 400`() {
+        every { createTask.create(any()) } throws IllegalArgumentException("Unknown recurrence type: YEARLY")
+
+        mockMvc.post("/api/tasks") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Aufgabe", "recurrence": {"type": "YEARLY"}}"""
+        }.andExpect {
+            status { isBadRequest() }
+        }
+    }
+
     companion object {
         val HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
         val MEMBER_ID = MemberId(UUID.fromString("00000000-0000-0000-0000-000000000010"))
