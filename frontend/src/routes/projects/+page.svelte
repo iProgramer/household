@@ -352,7 +352,7 @@
   }
 
   .project-tasks {
-    padding: 0 1rem 1rem;
+    padding: 0.75rem 1rem 1rem;
     border-top: var(--border-width) solid var(--color-divider);
     display: flex;
     flex-direction: column;
