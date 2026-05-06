@@ -1,10 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tasks as tasksApi, fixedEvents as eventsApi, mealNotes, ApiError } from '$lib/api';
+  import { fixedEvents as eventsApi, mealNotes, ApiError } from '$lib/api';
   import type { Task, FixedEvent, MealNote } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
+  import { tasks as tasksApi } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import PersonAvatar from '$lib/components/PersonAvatar.svelte';
+  import AddTaskForm from '$lib/components/AddTaskForm.svelte';
+  import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
   import { isoDate, formatDate } from '$lib/utils/dates';
 
   let todayTasks = $state<Task[]>([]);
@@ -12,10 +15,9 @@
   let mealNote = $state<MealNote | null>(null);
   let loading = $state(true);
   let loadError = $state('');
-  let newTaskTitle = $state('');
-  let addingTask = $state(false);
   let mealInput = $state('');
   let savingMeal = $state(false);
+  let showEventForm = $state(false);
 
   const today = new Date();
   const todayIso = isoDate(today);
@@ -54,19 +56,6 @@
     todayTasks = todayTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
   }
 
-  async function addTask() {
-    const title = newTaskTitle.trim();
-    if (!title || addingTask) return;
-    addingTask = true;
-    try {
-      const task = await tasksApi.create({ title, date: todayIso });
-      todayTasks = [...todayTasks, task];
-      newTaskTitle = '';
-    } finally {
-      addingTask = false;
-    }
-  }
-
   async function saveMeal() {
     const note = mealInput.trim();
     if (savingMeal || note === (mealNote?.note ?? '')) return;
@@ -103,20 +92,36 @@
   {:else if loadError}
     <div class="state-msg" style="color: var(--accent-rose)">{loadError}</div>
   {:else}
-    {#if todayEvents.length > 0}
-      <section class="section">
+    <section class="section">
+      <div class="section-header">
         <p class="section-label">Termine</p>
-        {#each todayEvents as event (event.id)}
-          <div class="event-item card">
-            <span class="event-dot"></span>
-            <span>{event.title}</span>
-            {#if event.recurrence}
-              <span class="muted badge">↻</span>
-            {/if}
-          </div>
-        {/each}
-      </section>
-    {/if}
+        <button class="add-section-btn" onclick={() => { showEventForm = !showEventForm; }}>
+          {showEventForm ? '✕' : '+ Termin'}
+        </button>
+      </div>
+
+      {#if showEventForm}
+        <CreateFixedEventForm
+          defaultDate={todayIso}
+          oncreated={(ev) => { todayEvents = [...todayEvents, ev]; showEventForm = false; }}
+          oncancel={() => { showEventForm = false; }}
+        />
+      {/if}
+
+      {#each todayEvents as event (event.id)}
+        <div class="event-item card">
+          <span class="event-dot"></span>
+          <span>{event.title}</span>
+          {#if event.recurrence}
+            <span class="muted badge">↻</span>
+          {/if}
+        </div>
+      {/each}
+
+      {#if todayEvents.length === 0 && !showEventForm}
+        <p class="muted empty-hint">Keine Termine heute</p>
+      {/if}
+    </section>
 
     <section class="section">
       <p class="section-label">Aufgaben</p>
@@ -132,17 +137,10 @@
         </div>
       {/each}
 
-      <form class="add-task" onsubmit={(e) => { e.preventDefault(); addTask(); }}>
-        <input
-          type="text"
-          placeholder="+ Neue Aufgabe"
-          bind:value={newTaskTitle}
-          disabled={addingTask}
-        />
-        {#if newTaskTitle.trim()}
-          <button type="submit" disabled={addingTask}>↵</button>
-        {/if}
-      </form>
+      <AddTaskForm
+        defaultDate={todayIso}
+        oncreated={(task) => { todayTasks = [...todayTasks, task]; }}
+      />
 
       {#if doneTasks.length > 0}
         <details class="done-section">
@@ -189,6 +187,32 @@
     margin-bottom: 1.75rem;
   }
 
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-header .section-label {
+    margin-bottom: 0;
+  }
+
+  .add-section-btn {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    padding: 0.2rem 0.5rem;
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--border-radius-pill);
+    background: var(--color-surface);
+  }
+
+  .add-section-btn:hover {
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
   .event-item {
     display: flex;
     align-items: center;
@@ -212,6 +236,11 @@
     font-size: 0.75rem;
   }
 
+  .empty-hint {
+    font-size: 0.875rem;
+    padding: 0.25rem 0;
+  }
+
   .task-row {
     display: flex;
     align-items: center;
@@ -226,41 +255,6 @@
 
   .task-wrap :global(.task-item) {
     margin-bottom: 0;
-  }
-
-  .add-task {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .add-task input {
-    flex: 1;
-    border: var(--border-width) dashed var(--color-muted);
-    border-radius: var(--border-radius-sm);
-    padding: 0.625rem 0.75rem;
-    background: transparent;
-    outline: none;
-    font-size: 0.9375rem;
-    color: var(--color-muted);
-  }
-
-  .add-task input:focus {
-    border-style: solid;
-    border-color: var(--color-border);
-    color: var(--color-text);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-  }
-
-  .add-task button {
-    padding: 0 0.875rem;
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background: var(--color-text);
-    color: var(--color-surface);
-    font-size: 1rem;
-    box-shadow: var(--shadow-card);
   }
 
   .done-section {

@@ -3,6 +3,7 @@
   import { tasks as tasksApi, ApiError } from '$lib/api';
   import type { Task, TaskStatus } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
+  import AddTaskForm from '$lib/components/AddTaskForm.svelte';
   import { isoDate } from '$lib/utils/dates';
 
   type Filter = 'all' | 'open' | 'done';
@@ -11,8 +12,6 @@
   let loading = $state(true);
   let loadError = $state('');
   let filter = $state<Filter>('open');
-  let newTaskTitle = $state('');
-  let addingTask = $state(false);
 
   async function load() {
     loading = true;
@@ -39,19 +38,6 @@
   async function completeTask(id: string) {
     await tasksApi.complete(id);
     allTasks = allTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
-  }
-
-  async function addTask() {
-    const title = newTaskTitle.trim();
-    if (!title || addingTask) return;
-    addingTask = true;
-    try {
-      const task = await tasksApi.create({ title });
-      allTasks = [...allTasks, task];
-      newTaskTitle = '';
-    } finally {
-      addingTask = false;
-    }
   }
 
   function sortTasks(tasks: Task[]) {
@@ -108,17 +94,10 @@
     </div>
 
     {#if filter !== 'done'}
-      <form class="add-task" onsubmit={(e) => { e.preventDefault(); addTask(); }}>
-        <input
-          type="text"
-          placeholder="+ Neue Aufgabe (ohne Datum)"
-          bind:value={newTaskTitle}
-          disabled={addingTask}
-        />
-        {#if newTaskTitle.trim()}
-          <button type="submit" disabled={addingTask}>↵</button>
-        {/if}
-      </form>
+      <AddTaskForm
+        placeholder="+ Neue Aufgabe"
+        oncreated={(task) => { allTasks = [...allTasks, task]; }}
+      />
     {/if}
   {/if}
 </div>
@@ -174,41 +153,6 @@
     transform: translateY(-50%);
     font-size: 0.75rem;
     pointer-events: none;
-  }
-
-  .add-task {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-  }
-
-  .add-task input {
-    flex: 1;
-    border: var(--border-width) dashed var(--color-muted);
-    border-radius: var(--border-radius-sm);
-    padding: 0.625rem 0.75rem;
-    background: transparent;
-    outline: none;
-    font-size: 0.9375rem;
-    color: var(--color-muted);
-  }
-
-  .add-task input:focus {
-    border-style: solid;
-    border-color: var(--color-border);
-    color: var(--color-text);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-  }
-
-  .add-task button {
-    padding: 0 0.875rem;
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background: var(--color-text);
-    color: var(--color-surface);
-    font-size: 1rem;
-    box-shadow: var(--shadow-card);
   }
 
   .state-msg {

@@ -4,6 +4,8 @@
   import type { Task, FixedEvent, MealNote } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import TaskItem from '$lib/components/TaskItem.svelte';
+  import AddTaskForm from '$lib/components/AddTaskForm.svelte';
+  import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
   import { isoDate, getWeekMonday, addDays, formatDay } from '$lib/utils/dates';
 
   const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
@@ -21,8 +23,7 @@
   const _initialIdx = days.findIndex((d) => isoDate(d) === _todayIso);
   let selectedDayIdx = $state(_initialIdx >= 0 ? _initialIdx : 0);
 
-  let newTaskTitle = $state('');
-  let addingTask = $state(false);
+  let showEventForm = $state(false);
 
   let currentMemberId = $state<string | null>(null);
   const unsubAuth = authStore.subscribe((s) => { currentMemberId = s.memberId; });
@@ -74,20 +75,6 @@
     weekTasks = [...weekTasks, updated];
   }
 
-  async function addTask() {
-    const title = newTaskTitle.trim();
-    if (!title || addingTask) return;
-    addingTask = true;
-    try {
-      const dateIso = isoDate(days[selectedDayIdx]);
-      const task = await tasksApi.create({ title, date: dateIso });
-      weekTasks = [...weekTasks, task];
-      newTaskTitle = '';
-    } finally {
-      addingTask = false;
-    }
-  }
-
   let selectedDayIso = $derived(isoDate(days[selectedDayIdx]));
   let selectedTasks = $derived(tasksForDay(selectedDayIso));
   let selectedEvents = $derived(eventsForDay(selectedDayIso));
@@ -131,10 +118,25 @@
 
     <!-- Selected day detail -->
     <div class="day-detail">
+      <div class="detail-section-header">
+        <span class="section-label" style="margin-bottom:0">Termine</span>
+        <button class="add-section-btn" onclick={() => { showEventForm = !showEventForm; }}>
+          {showEventForm ? '✕' : '+ Termin'}
+        </button>
+      </div>
+
+      {#if showEventForm}
+        <CreateFixedEventForm
+          defaultDate={selectedDayIso}
+          oncreated={(ev) => { weekEvents = [...weekEvents, ev]; showEventForm = false; }}
+          oncancel={() => { showEventForm = false; }}
+        />
+      {/if}
+
       {#if selectedEvents.length > 0}
         <div class="events-row">
           {#each selectedEvents as event (event.id)}
-            <span class="event-chip">{event.title}</span>
+            <span class="event-chip">{event.title}{#if event.recurrence} ↻{/if}</span>
           {/each}
         </div>
       {/if}
@@ -148,17 +150,10 @@
           <TaskItem {task} oncomplete={() => completeTask(task.id)} />
         {/each}
 
-        <form class="add-task" onsubmit={(e) => { e.preventDefault(); addTask(); }}>
-          <input
-            type="text"
-            placeholder="+ Neue Aufgabe"
-            bind:value={newTaskTitle}
-            disabled={addingTask}
-          />
-          {#if newTaskTitle.trim()}
-            <button type="submit" disabled={addingTask}>↵</button>
-          {/if}
-        </form>
+        <AddTaskForm
+          defaultDate={selectedDayIso}
+          oncreated={(task) => { weekTasks = [...weekTasks, task]; }}
+        />
       </div>
     </div>
 
@@ -254,6 +249,28 @@
     margin-bottom: 1.75rem;
   }
 
+  .detail-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .add-section-btn {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    padding: 0.2rem 0.5rem;
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--border-radius-pill);
+    background: var(--color-surface);
+  }
+
+  .add-section-btn:hover {
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+
   .events-row {
     display: flex;
     flex-wrap: wrap;
@@ -278,41 +295,6 @@
   .tasks-list {
     display: flex;
     flex-direction: column;
-  }
-
-  .add-task {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .add-task input {
-    flex: 1;
-    border: var(--border-width) dashed var(--color-muted);
-    border-radius: var(--border-radius-sm);
-    padding: 0.625rem 0.75rem;
-    background: transparent;
-    outline: none;
-    font-size: 0.9375rem;
-    color: var(--color-muted);
-  }
-
-  .add-task input:focus {
-    border-style: solid;
-    border-color: var(--color-border);
-    color: var(--color-text);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-  }
-
-  .add-task button {
-    padding: 0 0.875rem;
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background: var(--color-text);
-    color: var(--color-surface);
-    font-size: 1rem;
-    box-shadow: var(--shadow-card);
   }
 
   .section {

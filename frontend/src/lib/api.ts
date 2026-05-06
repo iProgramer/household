@@ -116,6 +116,8 @@ export const tasks = {
 export const fixedEvents = {
   today: () => request<FixedEvent[]>('/fixed-events/today'),
   week: (startDate: string) => request<FixedEvent[]>(`/fixed-events/week?startDate=${startDate}`),
+  create: (data: { title: string; date: string; recurrence?: Recurrence }) =>
+    request<FixedEvent>('/fixed-events', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ── Projects ──────────────────────────────────────────────────

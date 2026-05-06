@@ -4,6 +4,7 @@
   import type { Project, ProjectDetail } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import ProgressBar from '$lib/components/ProgressBar.svelte';
+  import AddTaskForm from '$lib/components/AddTaskForm.svelte';
 
   let projectList = $state<(Project & { expanded?: boolean })[]>([]);
   let detailCache = $state<Record<string, ProjectDetail>>({});
@@ -15,8 +16,6 @@
   let newGoal = $state('');
   let creating = $state(false);
 
-  let newTaskTitles = $state<Record<string, string>>({});
-  let addingTask = $state<Record<string, boolean>>({});
 
   async function load() {
     loading = true;
@@ -67,28 +66,19 @@
     });
   }
 
-  async function addTask(projectId: string) {
-    const title = (newTaskTitles[projectId] ?? '').trim();
-    if (!title || addingTask[projectId]) return;
-    addingTask = { ...addingTask, [projectId]: true };
-    try {
-      const task = await tasksApi.create({ title, projectId });
-      if (detailCache[projectId]) {
-        detailCache = {
-          ...detailCache,
-          [projectId]: {
-            ...detailCache[projectId],
-            tasks: [...detailCache[projectId].tasks, task],
-          },
-        };
-      }
-      projectList = projectList.map((p) =>
-        p.id === projectId ? { ...p, totalSteps: p.totalSteps + 1 } : p
-      );
-      newTaskTitles = { ...newTaskTitles, [projectId]: '' };
-    } finally {
-      addingTask = { ...addingTask, [projectId]: false };
+  function onTaskCreated(task: ReturnType<typeof Object.assign>, projectId: string) {
+    if (detailCache[projectId]) {
+      detailCache = {
+        ...detailCache,
+        [projectId]: {
+          ...detailCache[projectId],
+          tasks: [...detailCache[projectId].tasks, task],
+        },
+      };
     }
+    projectList = projectList.map((p) =>
+      p.id === projectId ? { ...p, totalSteps: p.totalSteps + 1 } : p
+    );
   }
 
   async function completeProject(id: string) {
@@ -177,17 +167,11 @@
               <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} />
             {/each}
 
-            <form class="add-task" onsubmit={(e) => { e.preventDefault(); addTask(project.id); }}>
-              <input
-                type="text"
-                placeholder="+ Schritt hinzufügen"
-                bind:value={newTaskTitles[project.id]}
-                disabled={addingTask[project.id]}
-              />
-              {#if (newTaskTitles[project.id] ?? '').trim()}
-                <button type="submit" disabled={addingTask[project.id]}>↵</button>
-              {/if}
-            </form>
+            <AddTaskForm
+              projectId={project.id}
+              placeholder="+ Schritt hinzufügen"
+              oncreated={(task) => onTaskCreated(task, project.id)}
+            />
 
             {#if project.totalSteps > 0 && project.completedSteps === project.totalSteps}
               <button class="complete-btn" onclick={() => completeProject(project.id)}>
@@ -356,40 +340,6 @@
     border-top: var(--border-width) solid var(--color-divider);
     display: flex;
     flex-direction: column;
-  }
-
-  .add-task {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-  }
-
-  .add-task input {
-    flex: 1;
-    border: var(--border-width) dashed var(--color-muted);
-    border-radius: var(--border-radius-sm);
-    padding: 0.5rem 0.75rem;
-    background: transparent;
-    font-size: 0.875rem;
-    color: var(--color-muted);
-  }
-
-  .add-task input:focus {
-    border-style: solid;
-    border-color: var(--color-border);
-    color: var(--color-text);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-card);
-  }
-
-  .add-task button {
-    padding: 0 0.875rem;
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    background: var(--color-text);
-    color: var(--color-surface);
-    font-size: 0.875rem;
-    box-shadow: var(--shadow-card);
   }
 
   .complete-btn {
