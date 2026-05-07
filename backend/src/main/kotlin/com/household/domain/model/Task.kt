@@ -40,6 +40,7 @@ data class Task(
     }
 
     fun complete(): Task = copy(status = TaskStatus.DONE)
+    fun reopen(): Task = copy(status = TaskStatus.OPEN)
     fun reschedule(newDate: LocalDate?): Task = copy(date = newDate)
     fun reassign(memberId: MemberId?): Task = copy(assignedTo = memberId)
 

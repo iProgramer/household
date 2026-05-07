@@ -40,6 +40,11 @@
     allTasks = allTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
   }
 
+  async function reopenTask(id: string) {
+    await tasksApi.reopen(id);
+    allTasks = allTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
+  }
+
   function sortTasks(tasks: Task[]) {
     return [...tasks].sort((a, b) => {
       if (a.date && b.date) return a.date.localeCompare(b.date);
@@ -81,7 +86,7 @@
     <div class="tasks-list">
       {#each filtered as task (task.id)}
         <div class="task-meta-row">
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
           {#if task.date}
             <span class="date-badge muted">{task.date}</span>
           {/if}

@@ -8,6 +8,7 @@ import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
 import com.household.domain.port.`in`.CompleteTaskUseCase
+import com.household.domain.port.`in`.ReopenTaskUseCase
 import com.household.domain.port.`in`.CreateTaskCommand
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
@@ -41,6 +42,7 @@ class TaskController(
     private val getWeekTasks: GetWeekTasksUseCase,
     private val getUnplannedTasks: GetUnplannedTasksUseCase,
     private val completeTask: CompleteTaskUseCase,
+    private val reopenTask: ReopenTaskUseCase,
     private val updateTask: UpdateTaskUseCase,
 ) {
     @PostMapping
@@ -79,6 +81,10 @@ class TaskController(
     @PostMapping("/{id}/complete")
     fun complete(@PathVariable id: UUID): TaskResponse =
         TaskResponse.from(completeTask.complete(TaskId(id)))
+
+    @PostMapping("/{id}/reopen")
+    fun reopen(@PathVariable id: UUID): TaskResponse =
+        TaskResponse.from(reopenTask.reopen(TaskId(id)))
 
     @PatchMapping("/{id}")
     fun update(

@@ -56,6 +56,11 @@
     todayTasks = todayTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
   }
 
+  async function reopenTask(id: string) {
+    await tasksApi.reopen(id);
+    todayTasks = todayTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
+  }
+
   async function saveMeal() {
     const note = mealInput.trim();
     if (savingMeal || note === (mealNote?.note ?? '')) return;
@@ -129,7 +134,7 @@
       {#each openTasks as task (task.id)}
         <div class="task-row">
           <div class="task-wrap">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
           </div>
           {#if task.assignedTo}
             <PersonAvatar memberId={task.assignedTo} {currentMemberId} email={currentEmail} size={24} />

@@ -5,18 +5,27 @@
   let {
     task,
     oncomplete,
-  }: { task: Task; oncomplete?: () => void | Promise<void> } = $props();
+    onreopen,
+  }: {
+    task: Task;
+    oncomplete?: () => void | Promise<void>;
+    onreopen?: () => void | Promise<void>;
+  } = $props();
 
   const accent = $derived(taskAccent(task.id));
-  let completing = $state(false);
+  let busy = $state(false);
 
-  async function handleComplete() {
-    if (completing || task.status === 'DONE' || !oncomplete) return;
-    completing = true;
+  async function handleCheck() {
+    if (busy) return;
+    busy = true;
     try {
-      await oncomplete();
+      if (task.status === 'DONE') {
+        await onreopen?.();
+      } else {
+        await oncomplete?.();
+      }
     } finally {
-      completing = false;
+      busy = false;
     }
   }
 </script>
@@ -28,9 +37,11 @@
 >
   <button
     class="check"
-    onclick={handleComplete}
-    disabled={task.status === 'DONE' || completing}
-    aria-label="Aufgabe abhaken"
+    class:checked={task.status === 'DONE'}
+    onclick={handleCheck}
+    disabled={busy || (task.status === 'OPEN' && !oncomplete) || (task.status === 'DONE' && !onreopen)}
+    aria-label={task.status === 'DONE' ? 'Aufgabe wieder öffnen' : 'Aufgabe abhaken'}
+    title={task.status === 'DONE' ? 'Klicken zum Wiederherstellen' : ''}
   >
     {#if task.status === 'DONE'}✓{/if}
   </button>
@@ -74,10 +85,18 @@
     padding: 0;
   }
 
-  .check:disabled {
-    cursor: default;
+  .check.checked {
     background: var(--color-border);
     color: var(--color-surface);
+  }
+
+  .check.checked:hover {
+    background: var(--accent-rose);
+    border-color: var(--accent-rose);
+  }
+
+  .check:disabled {
+    cursor: default;
   }
 
   .title {

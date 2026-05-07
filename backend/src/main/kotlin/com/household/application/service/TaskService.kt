@@ -5,6 +5,7 @@ import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskNotFoundException
 import com.household.domain.port.`in`.CompleteTaskUseCase
+import com.household.domain.port.`in`.ReopenTaskUseCase
 import com.household.domain.port.`in`.CreateTaskCommand
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
@@ -22,7 +23,7 @@ import java.time.LocalDate
 class TaskService(
     private val taskRepository: TaskRepository,
 ) : CreateTaskUseCase, GetTodayTasksUseCase, GetWeekTasksUseCase, GetUnplannedTasksUseCase,
-    CompleteTaskUseCase, UpdateTaskUseCase {
+    CompleteTaskUseCase, ReopenTaskUseCase, UpdateTaskUseCase {
 
     override fun create(command: CreateTaskCommand): Task =
         taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo, command.recurrenceRule, command.projectId))
@@ -44,6 +45,11 @@ class TaskService(
         val completed = taskRepository.save(task.complete())
         task.nextOccurrence()?.let { taskRepository.save(it) }
         return completed
+    }
+
+    override fun reopen(taskId: TaskId): Task {
+        val task = taskRepository.findById(taskId) ?: throw TaskNotFoundException(taskId)
+        return taskRepository.save(task.reopen())
     }
 
     override fun update(command: UpdateTaskCommand): Task {

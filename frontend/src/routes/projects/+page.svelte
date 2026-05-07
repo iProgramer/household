@@ -59,11 +59,27 @@
         },
       };
     }
-    projectList = projectList.map((p) => {
-      if (p.id !== projectId) return p;
-      const newCompleted = p.completedSteps + 1;
-      return { ...p, completedSteps: newCompleted };
-    });
+    projectList = projectList.map((p) =>
+      p.id !== projectId ? p : { ...p, completedSteps: p.completedSteps + 1 }
+    );
+  }
+
+  async function reopenTask(taskId: string, projectId: string) {
+    await tasksApi.reopen(taskId);
+    if (detailCache[projectId]) {
+      detailCache = {
+        ...detailCache,
+        [projectId]: {
+          ...detailCache[projectId],
+          tasks: detailCache[projectId].tasks.map((t) =>
+            t.id === taskId ? { ...t, status: 'OPEN' } : t
+          ),
+        },
+      };
+    }
+    projectList = projectList.map((p) =>
+      p.id !== projectId ? p : { ...p, completedSteps: Math.max(0, p.completedSteps - 1) }
+    );
   }
 
   function onTaskCreated(task: ReturnType<typeof Object.assign>, projectId: string) {
@@ -164,7 +180,7 @@
           {@const detail = detailCache[project.id]}
           <div class="project-tasks">
             {#each detail.tasks as task (task.id)}
-              <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} />
+              <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} onreopen={() => reopenTask(task.id, project.id)} />
             {/each}
 
             <AddTaskForm

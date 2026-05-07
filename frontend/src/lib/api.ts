@@ -107,6 +107,7 @@ export const tasks = {
   create: (data: { title: string; date?: string; assignedTo?: string; recurrence?: Recurrence; projectId?: string }) =>
     request<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
   complete: (id: string) => request<Task>(`/tasks/${id}/complete`, { method: 'POST' }),
+  reopen:   (id: string) => request<Task>(`/tasks/${id}/reopen`,   { method: 'POST' }),
   update: (id: string, data: { date?: string | null; assignedTo?: string | null }) =>
     request<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };

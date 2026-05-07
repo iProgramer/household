@@ -68,6 +68,12 @@
     unplannedTasks = unplannedTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
   }
 
+  async function reopenTask(id: string) {
+    await tasksApi.reopen(id);
+    weekTasks      = weekTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
+    unplannedTasks = unplannedTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
+  }
+
   async function scheduleTask(id: string, dateIso: string) {
     const updated = await tasksApi.update(id, { date: dateIso });
     unplannedTasks = unplannedTasks.filter((t) => t.id !== id);
@@ -148,7 +154,7 @@
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
         {/each}
         <AddTaskForm
           defaultDate={selectedDayIso}
@@ -162,7 +168,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
             <button class="schedule-btn" title="Auf ausgewählten Tag einplanen"
               onclick={() => scheduleTask(task.id, selectedDayIso)}>→</button>
           </div>
@@ -216,7 +222,7 @@
         {/if}
 
         {#each dayTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
         {/each}
 
         <AddTaskForm
@@ -232,7 +238,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
           </div>
         {/each}
       </section>
