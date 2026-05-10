@@ -3,6 +3,25 @@
   import type { Task } from '$lib/api';
   import { membersStore, memberPalette } from '$lib/stores/members';
 
+  const WEEKDAYS = [
+    { value: 'MONDAY',    label: 'Mo' },
+    { value: 'TUESDAY',   label: 'Di' },
+    { value: 'WEDNESDAY', label: 'Mi' },
+    { value: 'THURSDAY',  label: 'Do' },
+    { value: 'FRIDAY',    label: 'Fr' },
+    { value: 'SATURDAY',  label: 'Sa' },
+    { value: 'SUNDAY',    label: 'So' },
+  ];
+
+  const RECURRENCE_OPTIONS = [
+    { value: 'NONE',       label: 'Keine Wiederholung' },
+    { value: 'DAILY',      label: 'Täglich' },
+    { value: 'WEEKLY',     label: 'Wöchentlich' },
+    { value: 'BIWEEKLY',   label: 'Zweiwöchentlich' },
+    { value: 'MONTHLY',    label: 'Monatlich' },
+    { value: 'ON_WEEKDAY', label: 'Jeden Wochentag…' },
+  ];
+
   let {
     defaultDate = '',
     projectId = undefined,
@@ -22,28 +41,46 @@
   let saving = $state(false);
   let error = $state('');
   let assignedTo = $state<string | undefined>(undefined);
+  let recurrenceType = $state('NONE');
+  let weekday = $state('MONDAY');
+  let showRecurrence = $state(false);
 
   // Re-sync when switching days in week view (only if form isn't actively edited)
   $effect(() => {
     if (!expanded) date = defaultDate;
   });
 
+  function reset() {
+    title = '';
+    expanded = false;
+    date = defaultDate;
+    assignedTo = undefined;
+    recurrenceType = 'NONE';
+    weekday = 'MONDAY';
+    showRecurrence = false;
+  }
+
   async function handleSubmit() {
     if (saving || !title.trim()) return;
     saving = true;
     error = '';
     try {
+      const recurrence =
+        recurrenceType === 'NONE'
+          ? undefined
+          : recurrenceType === 'ON_WEEKDAY'
+          ? { type: 'ON_WEEKDAY' as const, weekday }
+          : { type: recurrenceType as 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' };
+
       const task = await tasksApi.create({
         title: title.trim(),
         ...(date ? { date } : {}),
         ...(assignedTo ? { assignedTo } : {}),
+        ...(recurrence ? { recurrence } : {}),
         ...(projectId ? { projectId } : {}),
       });
       oncreated(task);
-      title = '';
-      expanded = false;
-      date = defaultDate;
-      assignedTo = undefined;
+      reset();
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Fehler';
     } finally {
@@ -93,12 +130,52 @@
         </div>
       {/if}
 
+      <button
+        type="button"
+        class="recurrence-toggle"
+        class:active={recurrenceType !== 'NONE'}
+        onclick={() => { showRecurrence = !showRecurrence; }}
+        title="Wiederholung"
+        aria-label="Wiederholung festlegen"
+      >
+        ↻
+      </button>
+
       {#if !title.trim()}
-        <button type="button" class="cancel-btn muted" onclick={() => { expanded = false; date = defaultDate; assignedTo = undefined; }}>
+        <button
+          type="button"
+          class="cancel-btn muted"
+          onclick={() => { reset(); }}
+        >
           ✕
         </button>
       {/if}
     </div>
+
+    {#if showRecurrence}
+      <div class="recurrence-row">
+        <select bind:value={recurrenceType} class="recurrence-select">
+          {#each RECURRENCE_OPTIONS as opt}
+            <option value={opt.value}>{opt.label}</option>
+          {/each}
+        </select>
+
+        {#if recurrenceType === 'ON_WEEKDAY'}
+          <div class="weekday-chips">
+            {#each WEEKDAYS as d}
+              <button
+                type="button"
+                class="weekday-chip"
+                class:selected={weekday === d.value}
+                onclick={() => { weekday = d.value; }}
+              >
+                {d.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
   {/if}
 
   {#if error}
@@ -201,6 +278,72 @@
   .member-chip.selected {
     background: var(--chip-bg);
     box-shadow: 1px 1px 0 var(--chip-color);
+  }
+
+  .recurrence-toggle {
+    width: 26px;
+    height: 26px;
+    border-radius: var(--border-radius-sm);
+    border: var(--border-width) solid var(--color-divider);
+    background: transparent;
+    color: var(--color-muted);
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .recurrence-toggle.active {
+    border-color: var(--accent-amber);
+    color: var(--accent-amber);
+    background: var(--accent-amber-bg);
+  }
+
+  .recurrence-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    background: var(--accent-amber-bg);
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--border-radius-sm);
+  }
+
+  .recurrence-select {
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    padding: 0.3125rem 0.5rem;
+    font-size: 0.875rem;
+    font-family: var(--font);
+    background: var(--color-surface);
+    outline: none;
+  }
+
+  .weekday-chips {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .weekday-chip {
+    padding: 0.1875rem 0.4375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--border-radius-sm);
+    background: var(--color-surface);
+    color: var(--color-muted);
+    cursor: pointer;
+  }
+
+  .weekday-chip.selected {
+    border-color: var(--accent-amber);
+    background: var(--color-surface);
+    color: var(--accent-amber);
+    box-shadow: 1px 1px 0 var(--accent-amber);
   }
 
   .cancel-btn {
