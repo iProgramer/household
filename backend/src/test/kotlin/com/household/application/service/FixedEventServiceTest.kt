@@ -90,6 +90,34 @@ class FixedEventServiceTest {
         assertEquals(1, result.size)
     }
 
+    @Test
+    fun `getForWeek sets date to the actual occurrence date within the week`() {
+        // Event created on May 4 (Monday), recurs weekly
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Sport", monday, RecurrenceRule.Weekly)
+        every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(event)
+
+        // Query a different week: May 11–17
+        val nextMonday = monday.plusWeeks(1)
+        val result = service.getForWeek(HOUSEHOLD_ID, nextMonday)
+
+        assertEquals(1, result.size)
+        // Date must be the occurrence in the queried week, not the original creation date
+        assertEquals(nextMonday, result.first().date)
+    }
+
+    @Test
+    fun `getForWeek expands daily event to all 7 days`() {
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Standup", monday, RecurrenceRule.Daily)
+        every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(event)
+
+        val result = service.getForWeek(HOUSEHOLD_ID, monday)
+
+        assertEquals(7, result.size)
+        // Each day gets its own occurrence date
+        val dates = result.map { it.date }.toSet()
+        assertEquals(7, dates.size)
+    }
+
     companion object {
         val HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
     }

@@ -13,6 +13,7 @@ import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
 import com.household.domain.port.`in`.GetUnplannedTasksUseCase
 import com.household.domain.port.`in`.GetWeekTasksUseCase
+import com.household.domain.port.`in`.ReopenTaskUseCase
 import com.household.domain.port.`in`.UpdateTaskUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -53,6 +54,9 @@ class TaskControllerTest {
 
     @MockkBean
     lateinit var completeTask: CompleteTaskUseCase
+
+    @MockkBean
+    lateinit var reopenTask: ReopenTaskUseCase
 
     @MockkBean
     lateinit var updateTask: UpdateTaskUseCase

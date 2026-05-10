@@ -29,7 +29,9 @@ class FixedEventService(
     @Transactional(readOnly = true)
     override fun getForWeek(householdId: HouseholdId, startDate: LocalDate): List<FixedEvent> {
         val days = (0L..6L).map { startDate.plusDays(it) }
+        // Expand each event to its concrete occurrence date(s) within the week so the
+        // frontend can bucket by date without knowing any recurrence logic.
         return fixedEventRepository.findAllByHouseholdId(householdId)
-            .filter { event -> days.any { event.occursOn(it) } }
+            .flatMap { event -> days.filter { event.occursOn(it) }.map { day -> event.copy(date = day) } }
     }
 }
