@@ -9,4 +9,5 @@ interface MemberRepository {
     fun findById(id: MemberId): Member?
     fun findByEmail(email: String): Member?
     fun countByHouseholdId(householdId: HouseholdId): Int
+    fun findByHouseholdId(householdId: HouseholdId): List<Member>
 }

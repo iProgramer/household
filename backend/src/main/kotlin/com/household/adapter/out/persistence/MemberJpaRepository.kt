@@ -6,4 +6,5 @@ import java.util.UUID
 interface MemberJpaRepository : JpaRepository<MemberJpaEntity, UUID> {
     fun findByEmail(email: String): MemberJpaEntity?
     fun countByHouseholdId(householdId: UUID): Int
+    fun findAllByHouseholdId(householdId: UUID): List<MemberJpaEntity>
 }

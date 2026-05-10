@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tasks as tasksApi, ApiError } from '$lib/api';
   import type { Task } from '$lib/api';
+  import { membersStore, memberPalette } from '$lib/stores/members';
 
   let {
     defaultDate = '',
@@ -20,6 +21,7 @@
   let expanded = $state(false);
   let saving = $state(false);
   let error = $state('');
+  let assignedTo = $state<string | undefined>(undefined);
 
   // Re-sync when switching days in week view (only if form isn't actively edited)
   $effect(() => {
@@ -34,12 +36,14 @@
       const task = await tasksApi.create({
         title: title.trim(),
         ...(date ? { date } : {}),
+        ...(assignedTo ? { assignedTo } : {}),
         ...(projectId ? { projectId } : {}),
       });
       oncreated(task);
       title = '';
       expanded = false;
       date = defaultDate;
+      assignedTo = undefined;
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Fehler';
     } finally {
@@ -68,8 +72,29 @@
         <span class="muted">Datum</span>
         <input type="date" bind:value={date} class="date-input" />
       </label>
+
+      {#if $membersStore.length > 0}
+        <div class="member-chips">
+          {#each $membersStore as member}
+            {@const palette = memberPalette($membersStore, member.id)}
+            {@const selected = assignedTo === member.id}
+            <button
+              type="button"
+              class="member-chip"
+              class:selected
+              style="--chip-color: {palette.color}; --chip-bg: {palette.bg};"
+              onclick={() => { assignedTo = selected ? undefined : member.id; }}
+              title={member.email}
+              aria-label={`Zuweisen an ${member.email}`}
+            >
+              {member.email[0].toUpperCase()}
+            </button>
+          {/each}
+        </div>
+      {/if}
+
       {#if !title.trim()}
-        <button type="button" class="cancel-btn muted" onclick={() => { expanded = false; date = defaultDate; }}>
+        <button type="button" class="cancel-btn muted" onclick={() => { expanded = false; date = defaultDate; assignedTo = undefined; }}>
           ✕
         </button>
       {/if}
@@ -149,6 +174,33 @@
     font-family: var(--font);
     background: var(--color-bg);
     outline: none;
+  }
+
+  .member-chips {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .member-chip {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: var(--border-width) solid var(--chip-color);
+    background: transparent;
+    color: var(--chip-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.1s;
+  }
+
+  .member-chip.selected {
+    background: var(--chip-bg);
+    box-shadow: 1px 1px 0 var(--chip-color);
   }
 
   .cancel-btn {

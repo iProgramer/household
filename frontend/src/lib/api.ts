@@ -78,6 +78,11 @@ export interface MealNote {
   note: string;
 }
 
+export interface Member {
+  id: string;
+  email: string;
+}
+
 // ── Auth ──────────────────────────────────────────────────────
 
 export const auth = {
@@ -129,6 +134,12 @@ export const projects = {
   create: (data: { title: string; goal: string }) =>
     request<Project>('/projects', { method: 'POST', body: JSON.stringify(data) }),
   complete: (id: string) => request<Project>(`/projects/${id}/complete`, { method: 'POST' }),
+};
+
+// ── Members ───────────────────────────────────────────────────
+
+export const members = {
+  list: () => request<Member[]>('/members'),
 };
 
 // ── Meal Notes ────────────────────────────────────────────────

@@ -23,6 +23,9 @@ class MemberRepositoryAdapter(
     override fun countByHouseholdId(householdId: HouseholdId): Int =
         jpa.countByHouseholdId(householdId.value)
 
+    override fun findByHouseholdId(householdId: HouseholdId): List<Member> =
+        jpa.findAllByHouseholdId(householdId.value).map { it.toDomain() }
+
     private fun Member.toJpaEntity() = MemberJpaEntity(
         id = id.value,
         householdId = householdId.value,

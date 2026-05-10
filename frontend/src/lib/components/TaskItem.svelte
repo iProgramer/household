@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Task } from '$lib/api';
   import { taskAccent } from '$lib/utils/taskColor';
+  import { membersStore, memberPalette } from '$lib/stores/members';
 
   let {
     task,
@@ -14,6 +15,13 @@
 
   const accent = $derived(taskAccent(task.id));
   let busy = $state(false);
+
+  const assignedMember = $derived(
+    task.assignedTo ? $membersStore.find((m) => m.id === task.assignedTo) ?? null : null
+  );
+  const assignedPalette = $derived(
+    assignedMember ? memberPalette($membersStore, assignedMember.id) : null
+  );
 
   async function handleCheck() {
     if (busy) return;
@@ -50,6 +58,16 @@
 
   {#if task.recurrence}
     <span class="badge" title="Wiederkehrend">↻</span>
+  {/if}
+
+  {#if assignedMember && assignedPalette}
+    <span
+      class="member-badge"
+      style="--chip-color: {assignedPalette.color}; --chip-bg: {assignedPalette.bg};"
+      title={assignedMember.email}
+    >
+      {assignedMember.email[0].toUpperCase()}
+    </span>
   {/if}
 </div>
 
@@ -112,5 +130,20 @@
   .badge {
     font-size: 0.75rem;
     color: var(--color-muted);
+  }
+
+  .member-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: var(--border-width) solid var(--chip-color);
+    background: var(--chip-bg);
+    color: var(--chip-color);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 </style>

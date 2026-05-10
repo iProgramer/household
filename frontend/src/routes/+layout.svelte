@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
+  import { membersStore } from '$lib/stores/members';
   import '../app.css';
 
   let { children } = $props();
@@ -12,6 +13,14 @@
   $effect(() => {
     if (browser && !$isAuthenticated && !PUBLIC_ROUTES.some((r) => $page.url.pathname.startsWith(r))) {
       goto('/login');
+    }
+  });
+
+  $effect(() => {
+    if ($isAuthenticated) {
+      membersStore.load();
+    } else {
+      membersStore.clear();
     }
   });
 
