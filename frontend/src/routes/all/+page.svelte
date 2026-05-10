@@ -4,7 +4,7 @@
   import type { Task, TaskStatus } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
-  import { isoDate } from '$lib/utils/dates';
+  import { formatShortDate } from '$lib/utils/dates';
 
   type Filter = 'all' | 'open' | 'done';
 
@@ -88,7 +88,7 @@
         <div class="task-meta-row">
           <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
           {#if task.date}
-            <span class="date-badge muted">{task.date}</span>
+            <span class="date-badge muted">{formatShortDate(task.date)}</span>
           {/if}
         </div>
       {/each}

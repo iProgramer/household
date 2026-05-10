@@ -23,3 +23,13 @@ export function formatDate(d: Date): string {
 export function formatDay(d: Date): string {
   return d.toLocaleDateString('de-DE', { weekday: 'short' });
 }
+
+/**
+ * Format an ISO date string ("2026-05-12") as "Di, 12. Mai".
+ * Parses as local date to avoid UTC midnight shifting the day.
+ */
+export function formatShortDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+}
