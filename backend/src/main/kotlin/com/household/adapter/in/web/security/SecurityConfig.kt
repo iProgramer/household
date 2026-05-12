@@ -43,7 +43,6 @@ class SecurityConfig(
             allowedOriginPatterns = listOf(allowedOrigin)
             allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
             allowedHeaders = listOf("*")
-            allowCredentials = true
         }
         return UrlBasedCorsConfigurationSource().apply {
             registerCorsConfiguration("/**", config)
