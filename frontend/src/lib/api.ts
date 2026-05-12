@@ -1,4 +1,6 @@
-const BASE = '/api';
+// In dev/same-domain deployments VITE_API_URL is unset → relative /api
+// In cross-domain deployments (e.g. Render) set VITE_API_URL=https://your-backend.onrender.com
+const BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? '') + '/api';
 
 function getToken(): string | null {
   if (typeof localStorage === 'undefined') return null;
