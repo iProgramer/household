@@ -122,10 +122,10 @@
       <span class="week-kw" class:current={isCurrentWeek}>KW {getISOWeek(monday)}</span>
       <span class="week-range muted">{formatWeekRange(monday)}</span>
     </div>
-    <button class="week-nav-btn" onclick={() => { weekOffset += 1; }} aria-label="Nächste Woche">›</button>
     {#if !isCurrentWeek}
       <button class="week-today-btn muted" onclick={() => { weekOffset = 0; }}>Heute</button>
     {/if}
+    <button class="week-nav-btn" onclick={() => { weekOffset += 1; }} aria-label="Nächste Woche">›</button>
   </div>
 
   {#if loading}
