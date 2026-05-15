@@ -6,18 +6,23 @@
   import TaskItem from '$lib/components/TaskItem.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
   import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
-  import { isoDate, getWeekMonday, addDays } from '$lib/utils/dates';
+  import { isoDate, getWeekMonday, addDays, getISOWeek, formatWeekRange } from '$lib/utils/dates';
 
   const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
   const DAY_FULL   = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
-  const monday = getWeekMonday();
-  const days   = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-  const todayIso = isoDate(new Date());
+  const todayIso       = isoDate(new Date());
+  const currentMonday  = getWeekMonday();
 
-  let weekTasks     = $state<Task[]>([]);
-  let weekEvents    = $state<FixedEvent[]>([]);
-  let weekMeals     = $state<MealNote[]>([]);
+  let weekOffset = $state(0);
+  let monday     = $derived(addDays(currentMonday, weekOffset * 7));
+  let days       = $derived(Array.from({ length: 7 }, (_, i) => addDays(monday, i)));
+  let mondayIso  = $derived(isoDate(monday));
+  let isCurrentWeek = $derived(weekOffset === 0);
+
+  let weekTasks      = $state<Task[]>([]);
+  let weekEvents     = $state<FixedEvent[]>([]);
+  let weekMeals      = $state<MealNote[]>([]);
   let unplannedTasks = $state<Task[]>([]);
   let loading   = $state(true);
   let loadError = $state('');
@@ -25,21 +30,29 @@
   type ViewMode = 'day' | 'overview';
   let viewMode = $state<ViewMode>('day');
 
-  const _initialIdx = days.findIndex((d) => isoDate(d) === todayIso);
-  let selectedDayIdx = $state(_initialIdx >= 0 ? _initialIdx : 0);
+  let selectedDayIdx = $state(0);
 
-  let showEventForm     = $state(false);
-  let eventFormDayIso   = $state('');   // which day the form is opened for
+  // When week changes: reset selected day (clamp to today if current week, else Monday)
+  $effect(() => {
+    if (isCurrentWeek) {
+      const idx = days.findIndex((d) => isoDate(d) === todayIso);
+      selectedDayIdx = idx >= 0 ? idx : 0;
+    } else {
+      selectedDayIdx = 0;
+    }
+  });
+
+  let showEventForm      = $state(false);
   let overviewEventForms = $state<Record<string, boolean>>({});
 
   let currentMemberId = $state<string | null>(null);
   const unsubAuth = authStore.subscribe((s) => { currentMemberId = s.memberId; });
 
-  const mondayIso = isoDate(monday);
-
   async function load() {
     loading = true;
     loadError = '';
+    showEventForm = false;
+    overviewEventForms = {};
     try {
       const [wt, we, wm, ut] = await Promise.all([
         tasksApi.week(mondayIso),
@@ -57,6 +70,12 @@
       loading = false;
     }
   }
+
+  // Reload whenever the week changes
+  $effect(() => {
+    mondayIso; // track dependency
+    load();
+  });
 
   function tasksForDay(dayIso: string)  { return weekTasks.filter((t) => t.date === dayIso); }
   function eventsForDay(dayIso: string) { return weekEvents.filter((e) => e.date === dayIso); }
@@ -80,15 +99,12 @@
     weekTasks = [...weekTasks, updated];
   }
 
-  let selectedDayIso    = $derived(isoDate(days[selectedDayIdx]));
-  let selectedTasks     = $derived(tasksForDay(selectedDayIso));
-  let selectedEvents    = $derived(eventsForDay(selectedDayIso));
-  let selectedMeal      = $derived(mealForDay(selectedDayIso));
+  let selectedDayIso = $derived(isoDate(days[selectedDayIdx]));
+  let selectedTasks  = $derived(tasksForDay(selectedDayIso));
+  let selectedEvents = $derived(eventsForDay(selectedDayIso));
+  let selectedMeal   = $derived(mealForDay(selectedDayIso));
 
-  onMount(() => {
-    load();
-    return unsubAuth;
-  });
+  onMount(() => unsubAuth);
 </script>
 
 <div class="page">
@@ -99,6 +115,18 @@
       <button class:active={viewMode === 'overview'} onclick={() => { viewMode = 'overview'; }}>Übersicht</button>
     </div>
   </header>
+
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick={() => { weekOffset -= 1; }} aria-label="Vorherige Woche">‹</button>
+    <div class="week-nav-label">
+      <span class="week-kw" class:current={isCurrentWeek}>KW {getISOWeek(monday)}</span>
+      <span class="week-range muted">{formatWeekRange(monday)}</span>
+    </div>
+    <button class="week-nav-btn" onclick={() => { weekOffset += 1; }} aria-label="Nächste Woche">›</button>
+    {#if !isCurrentWeek}
+      <button class="week-today-btn muted" onclick={() => { weekOffset = 0; }}>Heute</button>
+    {/if}
+  </div>
 
   {#if loading}
     <div class="state-msg muted">Laden…</div>
@@ -127,7 +155,7 @@
     <div class="day-detail">
       <div class="detail-section-header">
         <span class="section-label" style="margin-bottom:0">Termine</span>
-        <button class="add-section-btn" onclick={() => { showEventForm = !showEventForm; eventFormDayIso = selectedDayIso; }}>
+        <button class="add-section-btn" onclick={() => { showEventForm = !showEventForm; }}>
           {showEventForm ? '✕' : '+ Termin'}
         </button>
       </div>
@@ -258,6 +286,53 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 1.25rem;
+  }
+
+  /* Week navigation */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .week-nav-btn {
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+    color: var(--color-text);
+  }
+
+  .week-nav-label {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .week-kw {
+    font-size: 0.9375rem;
+    font-weight: 700;
+  }
+
+  .week-kw.current {
+    color: var(--accent-sage);
+  }
+
+  .week-range {
+    font-size: 0.8125rem;
+  }
+
+  .week-today-btn {
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.625rem;
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--border-radius-pill);
+    background: var(--color-surface);
   }
 
   /* View toggle */
