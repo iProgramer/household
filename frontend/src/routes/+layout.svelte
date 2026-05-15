@@ -76,6 +76,9 @@
   const monthLabel = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
   let isPublicRoute = $derived(PUBLIC_ROUTES.some((r) => $page.url.pathname.startsWith(r)));
+
+  let menuOpen = $state(false);
+  let userEmail = $derived($authStore.email ?? '');
 </script>
 
 {#if isPublicRoute}
@@ -115,7 +118,37 @@
           <span class="bottom-label">{item.label}</span>
         </a>
       {/each}
+      <button class="bottom-nav-item" onclick={() => { menuOpen = true; }} aria-label="Konto">
+        <span class="bottom-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="5.5" r="2.5"/>
+            <path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5"/>
+          </svg>
+        </span>
+        <span class="bottom-label">Konto</span>
+      </button>
     </nav>
+
+    {#if menuOpen}
+      <div class="menu-backdrop" onclick={() => { menuOpen = false; }} role="presentation"></div>
+      <div class="account-menu">
+        <div class="account-menu-header">
+          <span class="account-email muted">{userEmail}</span>
+        </div>
+        <ul class="account-menu-list">
+          <li>
+            <button class="account-menu-item danger" onclick={() => { menuOpen = false; authStore.logout(); goto('/login'); }}>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
+                <polyline points="11 12 14 8 11 4"/>
+                <line x1="14" y1="8" x2="6" y2="8"/>
+              </svg>
+              Abmelden
+            </button>
+          </li>
+        </ul>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -180,6 +213,56 @@
 
   .bottom-nav-item.active .bottom-label {
     font-weight: 700;
+  }
+
+  /* Account menu */
+  .menu-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 110;
+  }
+
+  .account-menu {
+    position: fixed;
+    bottom: var(--nav-height);
+    left: 0;
+    right: 0;
+    background: var(--color-surface);
+    border-top: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+    z-index: 120;
+    padding: 0.25rem 0 0.5rem;
+  }
+
+  .account-menu-header {
+    padding: 0.75rem 1.25rem 0.625rem;
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .account-email {
+    font-size: 0.8125rem;
+  }
+
+  .account-menu-list {
+    list-style: none;
+    padding: 0.375rem 0;
+  }
+
+  .account-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: left;
+  }
+
+  .account-menu-item.danger {
+    color: var(--accent-rose);
   }
 
   @media (min-width: 768px) {
@@ -292,6 +375,11 @@
     }
 
     .bottom-nav {
+      display: none;
+    }
+
+    .menu-backdrop,
+    .account-menu {
       display: none;
     }
   }
