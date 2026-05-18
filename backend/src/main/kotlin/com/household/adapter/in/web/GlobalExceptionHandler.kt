@@ -4,6 +4,7 @@ import com.household.domain.model.EmailAlreadyExistsException
 import com.household.domain.model.HouseholdFullException
 import com.household.domain.model.InvalidCredentialsException
 import com.household.domain.model.InvalidInviteCodeException
+import com.household.domain.model.MealNotFoundException
 import com.household.domain.model.ProjectNotFoundException
 import com.household.domain.model.TaskNotFoundException
 import org.springframework.http.HttpStatus
@@ -22,6 +23,11 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ProjectNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleProjectNotFound(e: ProjectNotFoundException): ErrorResponse =
+        ErrorResponse(e.message ?: "Not found")
+
+    @ExceptionHandler(MealNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleMealNotFound(e: MealNotFoundException): ErrorResponse =
         ErrorResponse(e.message ?: "Not found")
 
     @ExceptionHandler(InvalidCredentialsException::class)

@@ -1,22 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fixedEvents as eventsApi, mealNotes, ApiError } from '$lib/api';
-  import type { Task, FixedEvent, MealNote } from '$lib/api';
+  import { fixedEvents as eventsApi, meals as mealsApi, ApiError } from '$lib/api';
+  import type { Task, FixedEvent, Meal } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { tasks as tasksApi } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import PersonAvatar from '$lib/components/PersonAvatar.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
   import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
+  import MealCombobox from '$lib/components/MealCombobox.svelte';
   import { isoDate, formatDate } from '$lib/utils/dates';
 
   let todayTasks = $state<Task[]>([]);
   let todayEvents = $state<FixedEvent[]>([]);
-  let mealNote = $state<MealNote | null>(null);
+  let todayMeals = $state<Meal[]>([]);
+  let mealIdeas = $state<Meal[]>([]);
   let loading = $state(true);
   let loadError = $state('');
-  let mealInput = $state('');
-  let savingMeal = $state(false);
   let showEventForm = $state(false);
 
   const today = new Date();
@@ -35,15 +35,16 @@
     loading = true;
     loadError = '';
     try {
-      const [t, e, m] = await Promise.all([
+      const [t, e, m, ideas] = await Promise.all([
         tasksApi.today(),
         eventsApi.today(),
-        mealNotes.today(),
+        mealsApi.forDate(todayIso),
+        mealsApi.ideas(),
       ]);
       todayTasks = t;
       todayEvents = e;
-      mealNote = m;
-      mealInput = m?.note ?? '';
+      todayMeals = m;
+      mealIdeas = ideas;
     } catch (e) {
       loadError = e instanceof ApiError ? e.message : 'Fehler beim Laden';
     } finally {
@@ -61,15 +62,10 @@
     todayTasks = todayTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
   }
 
-  async function saveMeal() {
-    const note = mealInput.trim();
-    if (savingMeal || note === (mealNote?.note ?? '')) return;
-    savingMeal = true;
-    try {
-      mealNote = await mealNotes.set(todayIso, note);
-    } finally {
-      savingMeal = false;
-    }
+  async function unassignMeal(id: string) {
+    const unassigned = await mealsApi.unassign(id);
+    todayMeals = todayMeals.filter((m) => m.id !== id);
+    mealIdeas = [...mealIdeas, unassigned];
   }
 
   let openTasks = $derived(todayTasks.filter((t) => t.status === 'OPEN'));
@@ -158,18 +154,21 @@
     </section>
 
     <section class="section">
-      <p class="section-label">Mahlzeit</p>
-      <div class="meal-box card">
-        <textarea
-          rows="2"
-          placeholder="Was gibt's heute?"
-          bind:value={mealInput}
-          onblur={saveMeal}
-        ></textarea>
-        {#if savingMeal}
-          <span class="muted saving-label">Speichern…</span>
-        {/if}
+      <p class="section-label">Mahlzeiten</p>
+      <div class="meal-chips">
+        {#each todayMeals as meal (meal.id)}
+          <div class="meal-chip card">
+            <span>{meal.title}</span>
+            <button class="meal-unassign" onclick={() => unassignMeal(meal.id)} title="Zurück in den Pool" aria-label="Entfernen">✕</button>
+          </div>
+        {/each}
       </div>
+      <MealCombobox
+        date={todayIso}
+        ideas={mealIdeas}
+        onassigned={(meal) => { todayMeals = [...todayMeals, meal]; mealIdeas = mealIdeas.filter((m) => m.id !== meal.id); }}
+        onideacreated={(idea) => { mealIdeas = [...mealIdeas, idea]; }}
+      />
     </section>
   {/if}
 </div>
@@ -273,26 +272,30 @@
     list-style: none;
   }
 
-  .meal-box {
-    padding: 0.75rem;
+  .meal-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .meal-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
     background: var(--accent-lilac-bg);
-  }
-
-  .meal-box textarea {
-    width: 100%;
-    border: none;
-    background: transparent;
-    resize: none;
-    outline: none;
     font-size: 0.9375rem;
-    line-height: 1.5;
   }
 
-  .saving-label {
+  .meal-unassign {
+    color: var(--color-muted);
     font-size: 0.75rem;
-    display: block;
-    text-align: right;
-    margin-top: 0.25rem;
+    padding: 0.125rem 0.25rem;
+  }
+
+  .meal-unassign:hover {
+    color: var(--accent-rose);
   }
 
   .state-msg {

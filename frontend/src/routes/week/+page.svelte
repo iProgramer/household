@@ -1,11 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tasks as tasksApi, fixedEvents as eventsApi, mealNotes, ApiError } from '$lib/api';
-  import type { Task, FixedEvent, MealNote } from '$lib/api';
+  import { tasks as tasksApi, fixedEvents as eventsApi, meals as mealsApi, ApiError } from '$lib/api';
+  import type { Task, FixedEvent, Meal } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
   import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
+  import MealCombobox from '$lib/components/MealCombobox.svelte';
   import { isoDate, getWeekMonday, addDays, getISOWeek, formatWeekRange } from '$lib/utils/dates';
 
   const DAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
@@ -20,10 +21,11 @@
   let mondayIso  = $derived(isoDate(monday));
   let isCurrentWeek = $derived(weekOffset === 0);
 
-  let weekTasks      = $state<Task[]>([]);
-  let weekEvents     = $state<FixedEvent[]>([]);
-  let weekMeals      = $state<MealNote[]>([]);
-  let unplannedTasks = $state<Task[]>([]);
+  let weekTasks         = $state<Task[]>([]);
+  let weekEvents        = $state<FixedEvent[]>([]);
+  let weekPlannedMeals  = $state<Meal[]>([]);
+  let mealIdeas         = $state<Meal[]>([]);
+  let unplannedTasks    = $state<Task[]>([]);
   let loading   = $state(true);
   let loadError = $state('');
 
@@ -54,16 +56,18 @@
     showEventForm = false;
     overviewEventForms = {};
     try {
-      const [wt, we, wm, ut] = await Promise.all([
+      const [wt, we, wm, ideas, ut] = await Promise.all([
         tasksApi.week(mondayIso),
         eventsApi.week(mondayIso),
-        mealNotes.week(mondayIso),
+        mealsApi.forWeek(mondayIso),
+        mealsApi.ideas(),
         tasksApi.unplanned(),
       ]);
-      weekTasks      = wt;
-      weekEvents     = we;
-      weekMeals      = wm;
-      unplannedTasks = ut;
+      weekTasks        = wt;
+      weekEvents       = we;
+      weekPlannedMeals = wm;
+      mealIdeas        = ideas;
+      unplannedTasks   = ut;
     } catch (e) {
       loadError = e instanceof ApiError ? e.message : 'Fehler beim Laden';
     } finally {
@@ -79,7 +83,13 @@
 
   function tasksForDay(dayIso: string)  { return weekTasks.filter((t) => t.date === dayIso); }
   function eventsForDay(dayIso: string) { return weekEvents.filter((e) => e.date === dayIso); }
-  function mealForDay(dayIso: string)   { return weekMeals.find((m) => m.date === dayIso); }
+  function mealsForDay(dayIso: string)  { return weekPlannedMeals.filter((m) => m.date === dayIso); }
+
+  async function unassignMeal(id: string) {
+    const unassigned = await mealsApi.unassign(id);
+    weekPlannedMeals = weekPlannedMeals.filter((m) => m.id !== id);
+    mealIdeas = [...mealIdeas, unassigned];
+  }
 
   async function completeTask(id: string) {
     await tasksApi.complete(id);
@@ -99,10 +109,10 @@
     weekTasks = [...weekTasks, updated];
   }
 
-  let selectedDayIso = $derived(isoDate(days[selectedDayIdx]));
-  let selectedTasks  = $derived(tasksForDay(selectedDayIso));
-  let selectedEvents = $derived(eventsForDay(selectedDayIso));
-  let selectedMeal   = $derived(mealForDay(selectedDayIso));
+  let selectedDayIso   = $derived(isoDate(days[selectedDayIdx]));
+  let selectedTasks    = $derived(tasksForDay(selectedDayIso));
+  let selectedEvents   = $derived(eventsForDay(selectedDayIso));
+  let selectedMeals    = $derived(mealsForDay(selectedDayIso));
 
   onMount(() => unsubAuth);
 </script>
@@ -176,9 +186,24 @@
         </div>
       {/if}
 
-      {#if selectedMeal}
-        <p class="meal-chip muted">🍽 {selectedMeal.note}</p>
+      {#if selectedMeals.length > 0}
+        <div class="meal-chips-row">
+          {#each selectedMeals as meal (meal.id)}
+            <span class="meal-chip">
+              {meal.title}
+              <button class="meal-unassign" onclick={() => unassignMeal(meal.id)} title="Zurück in den Pool" aria-label="Entfernen">✕</button>
+            </span>
+          {/each}
+        </div>
       {/if}
+      <div class="meal-combobox-wrap">
+        <MealCombobox
+          date={selectedDayIso}
+          ideas={mealIdeas}
+          onassigned={(meal) => { weekPlannedMeals = [...weekPlannedMeals, meal]; mealIdeas = mealIdeas.filter((m) => m.id !== meal.id); }}
+          onideacreated={(idea) => { mealIdeas = [...mealIdeas, idea]; }}
+        />
+      </div>
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
@@ -210,8 +235,8 @@
       {@const iso = isoDate(day)}
       {@const dayTasks  = tasksForDay(iso)}
       {@const dayEvents = eventsForDay(iso)}
-      {@const dayMeal   = mealForDay(iso)}
-      {@const isEmpty   = dayTasks.length === 0 && dayEvents.length === 0}
+      {@const dayMeals  = mealsForDay(iso)}
+      {@const isEmpty   = dayTasks.length === 0 && dayEvents.length === 0 && dayMeals.length === 0}
 
       <div class="agenda-day" class:today={iso === todayIso} class:empty={isEmpty}>
         <div class="agenda-day-header">
@@ -245,8 +270,15 @@
           </div>
         {/if}
 
-        {#if dayMeal}
-          <p class="meal-chip muted">🍽 {dayMeal.note}</p>
+        {#if dayMeals.length > 0}
+          <div class="meal-chips-row">
+            {#each dayMeals as meal (meal.id)}
+              <span class="meal-chip">
+                {meal.title}
+                <button class="meal-unassign" onclick={() => unassignMeal(meal.id)} title="Zurück in den Pool" aria-label="Entfernen">✕</button>
+              </span>
+            {/each}
+          </div>
         {/if}
 
         {#each dayTasks as task (task.id)}
@@ -426,7 +458,29 @@
     font-weight: 500;
   }
 
-  .meal-chip { font-size: 0.875rem; margin-bottom: 0.625rem; }
+  .meal-chips-row { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.5rem; }
+
+  .meal-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    background: var(--accent-lilac-bg);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-pill);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .meal-unassign {
+    color: var(--color-muted);
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+
+  .meal-unassign:hover { color: var(--accent-rose); }
+
+  .meal-combobox-wrap { margin-bottom: 0.75rem; }
 
   .tasks-list { display: flex; flex-direction: column; }
 

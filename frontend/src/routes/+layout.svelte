@@ -62,11 +62,20 @@
         <line x1="4" y1="8" x2="12" y2="8"/>
       </svg>`,
     },
+    {
+      href: '/meals',
+      label: 'Mahlzeiten',
+      icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 13c0-4 2-7 6-7s6 3 6 7"/>
+        <line x1="8" y1="6" x2="8" y2="3"/>
+        <line x1="5" y1="4" x2="11" y2="4"/>
+      </svg>`,
+    },
   ];
 
   const bottomNav = nav.map((item, i) => ({
     ...item,
-    label: ['Heute', 'Woche', 'Projekte', 'Alles'][i],
+    label: ['Heute', 'Woche', 'Projekte', 'Alles', 'Essen'][i],
   }));
 
   function isActive(href: string) {

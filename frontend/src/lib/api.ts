@@ -80,6 +80,15 @@ export interface MealNote {
   note: string;
 }
 
+export type MealStatus = 'IDEA' | 'PLANNED';
+
+export interface Meal {
+  id: string;
+  title: string;
+  date: string | null;
+  status: MealStatus;
+}
+
 export interface Member {
   id: string;
   email: string;
@@ -142,6 +151,19 @@ export const projects = {
 
 export const members = {
   list: () => request<Member[]>('/members'),
+};
+
+// ── Meals ─────────────────────────────────────────────────────
+
+export const meals = {
+  ideas: () => request<Meal[]>('/meals/ideas'),
+  forDate: (date: string) => request<Meal[]>(`/meals/date/${date}`),
+  forWeek: (startDate: string) => request<Meal[]>(`/meals/week?startDate=${startDate}`),
+  create: (title: string) => request<Meal>('/meals', { method: 'POST', body: JSON.stringify({ title }) }),
+  assign: (id: string, date: string) =>
+    request<Meal>(`/meals/${id}/assign`, { method: 'PUT', body: JSON.stringify({ date }) }),
+  unassign: (id: string) => request<Meal>(`/meals/${id}/unassign`, { method: 'PUT' }),
+  delete: (id: string) => request<void>(`/meals/${id}`, { method: 'DELETE' }),
 };
 
 // ── Meal Notes ────────────────────────────────────────────────
