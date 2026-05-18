@@ -1,7 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { auth as apiAuth, ApiError } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
+  import confetti from 'canvas-confetti';
 
   type Mode = 'create' | 'join';
 
@@ -12,6 +14,31 @@
   let error = $state('');
   let loading = $state(false);
   let createdInviteCode = $state<string | null>(null);
+  let joined = $state(false);
+
+  function fireConfetti() {
+    const duration = 3000;
+    const end = Date.now() + duration;
+    const colors = ['#8BAF8B', '#B8A9C9', '#F5C518', '#E8927C', '#ffffff'];
+
+    (function frame() {
+      confetti({
+        particleCount: 6,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors,
+      });
+      confetti({
+        particleCount: 6,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors,
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    })();
+  }
 
   async function handleSubmit() {
     if (loading) return;
@@ -25,7 +52,8 @@
       } else {
         const res = await apiAuth.join(email, password, inviteCode);
         authStore.login(res.token, res.memberId, email);
-        goto('/today');
+        joined = true;
+        fireConfetti();
       }
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Registrierung fehlgeschlagen';
@@ -37,7 +65,14 @@
 
 <div class="page">
   <div class="card auth-card">
-    {#if createdInviteCode}
+    {#if joined}
+      <div class="celebration">
+        <div class="celebration-icon">🎉</div>
+        <h1>Willkommen!</h1>
+        <p class="celebration-text">Du bist jetzt dabei.<br/>Alles bereit – los geht's!</p>
+        <button class="btn-primary" onclick={() => goto('/today')}>Los geht's →</button>
+      </div>
+    {:else if createdInviteCode}
       <h1>Haushalt erstellt!</h1>
       <p class="invite-info">Teile diesen Code mit deinem Partner, damit er beitreten kann:</p>
       <div class="invite-code">{createdInviteCode}</div>
@@ -185,6 +220,32 @@
   .center-text a {
     font-weight: 600;
     text-decoration: underline;
+  }
+
+  .celebration {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+  }
+
+  .celebration-icon {
+    font-size: 3.5rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .celebration h1 {
+    margin-bottom: 0;
+  }
+
+  .celebration-text {
+    color: var(--color-muted);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
   }
 
   .invite-info {
