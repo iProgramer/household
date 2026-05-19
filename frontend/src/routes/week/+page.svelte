@@ -109,6 +109,12 @@
     weekTasks = [...weekTasks, updated];
   }
 
+  async function unscheduleTask(id: string) {
+    const updated = await tasksApi.update(id, { date: null });
+    weekTasks = weekTasks.filter((t) => t.id !== id);
+    unplannedTasks = [...unplannedTasks, updated];
+  }
+
   let selectedDayIso   = $derived(isoDate(days[selectedDayIdx]));
   let selectedTasks    = $derived(tasksForDay(selectedDayIso));
   let selectedEvents   = $derived(eventsForDay(selectedDayIso));
@@ -207,7 +213,7 @@
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} />
         {/each}
         <AddTaskForm
           defaultDate={selectedDayIso}
@@ -282,7 +288,7 @@
         {/if}
 
         {#each dayTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} />
         {/each}
 
         <AddTaskForm

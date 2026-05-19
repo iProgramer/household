@@ -7,10 +7,12 @@
     task,
     oncomplete,
     onreopen,
+    onunschedule,
   }: {
     task: Task;
     oncomplete?: () => void | Promise<void>;
     onreopen?: () => void | Promise<void>;
+    onunschedule?: () => void | Promise<void>;
   } = $props();
 
   const accent = $derived(taskAccent(task.id));
@@ -68,6 +70,10 @@
     >
       {assignedMember.email[0].toUpperCase()}
     </span>
+  {/if}
+
+  {#if onunschedule && task.date}
+    <button class="unschedule-btn" onclick={onunschedule} title="Zurückstellen" aria-label="Zurückstellen">↩</button>
   {/if}
 </div>
 
@@ -130,6 +136,17 @@
   .badge {
     font-size: 0.75rem;
     color: var(--color-muted);
+  }
+
+  .unschedule-btn {
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    padding: 0.125rem 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .unschedule-btn:hover {
+    color: var(--color-text);
   }
 
   .member-badge {

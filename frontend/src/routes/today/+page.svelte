@@ -62,6 +62,11 @@
     todayTasks = todayTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
   }
 
+  async function unscheduleTask(id: string) {
+    await tasksApi.update(id, { date: null });
+    todayTasks = todayTasks.filter((t) => t.id !== id);
+  }
+
   async function unassignMeal(id: string) {
     const unassigned = await mealsApi.unassign(id);
     todayMeals = todayMeals.filter((m) => m.id !== id);
@@ -130,7 +135,7 @@
       {#each openTasks as task (task.id)}
         <div class="task-row">
           <div class="task-wrap">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} />
           </div>
           {#if task.assignedTo}
             <PersonAvatar memberId={task.assignedTo} {currentMemberId} email={currentEmail} size={24} />
