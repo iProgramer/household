@@ -4,6 +4,7 @@
   import { browser } from '$app/environment';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
   import { membersStore } from '$lib/stores/members';
+  import { household as householdApi } from '$lib/api';
   import '../app.css';
 
   let { children } = $props();
@@ -88,6 +89,17 @@
 
   let menuOpen = $state(false);
   let userEmail = $derived($authStore.email ?? '');
+
+  async function shareInvite() {
+    const { inviteCode } = await householdApi.inviteCode();
+    const url = `${window.location.origin}/register?invite=${inviteCode}`;
+    if (navigator.share) {
+      await navigator.share({ title: 'Haushalt-Einladung', url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      alert('Link kopiert!');
+    }
+  }
 </script>
 
 {#if isPublicRoute}
@@ -112,6 +124,7 @@
       </nav>
 
       <div class="sidebar-footer">
+        <button onclick={shareInvite}>Einladen</button>
         <button onclick={() => { authStore.logout(); goto('/login'); }}>Abmelden</button>
       </div>
     </aside>
@@ -145,6 +158,18 @@
           <span class="account-email muted">{userEmail}</span>
         </div>
         <ul class="account-menu-list">
+          <li>
+            <button class="account-menu-item" onclick={() => { menuOpen = false; shareInvite(); }}>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="13" cy="3" r="2"/>
+                <circle cx="3" cy="8" r="2"/>
+                <circle cx="13" cy="13" r="2"/>
+                <line x1="5" y1="7" x2="11" y2="4"/>
+                <line x1="5" y1="9" x2="11" y2="12"/>
+              </svg>
+              Einladen
+            </button>
+          </li>
           <li>
             <button class="account-menu-item danger" onclick={() => { menuOpen = false; authStore.logout(); goto('/login'); }}>
               <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

@@ -153,6 +153,12 @@ export const members = {
   list: () => request<Member[]>('/members'),
 };
 
+// ── Household ─────────────────────────────────────────────────
+
+export const household = {
+  inviteCode: () => request<{ inviteCode: string }>('/household/invite-code'),
+};
+
 // ── Meals ─────────────────────────────────────────────────────
 
 export const meals = {

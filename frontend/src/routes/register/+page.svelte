@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { auth as apiAuth, ApiError } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import confetti from 'canvas-confetti';
@@ -15,6 +16,14 @@
   let loading = $state(false);
   let createdInviteCode = $state<string | null>(null);
   let joined = $state(false);
+
+  onMount(() => {
+    const invite = $page.url.searchParams.get('invite');
+    if (invite) {
+      inviteCode = invite;
+      mode = 'join';
+    }
+  });
 
   function fireConfetti() {
     const duration = 3000;
