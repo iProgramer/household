@@ -9,6 +9,7 @@ import com.household.domain.port.`in`.ReopenTaskUseCase
 import com.household.domain.port.`in`.CreateTaskCommand
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
+import com.household.domain.port.`in`.GetOverdueTasksUseCase
 import com.household.domain.port.`in`.GetUnplannedTasksUseCase
 import com.household.domain.port.`in`.GetWeekTasksUseCase
 import com.household.domain.port.`in`.UpdateTaskCommand
@@ -23,7 +24,7 @@ import java.time.LocalDate
 class TaskService(
     private val taskRepository: TaskRepository,
 ) : CreateTaskUseCase, GetTodayTasksUseCase, GetWeekTasksUseCase, GetUnplannedTasksUseCase,
-    CompleteTaskUseCase, ReopenTaskUseCase, UpdateTaskUseCase {
+    GetOverdueTasksUseCase, CompleteTaskUseCase, ReopenTaskUseCase, UpdateTaskUseCase {
 
     override fun create(command: CreateTaskCommand): Task =
         taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo, command.recurrenceRule, command.projectId))
@@ -39,6 +40,10 @@ class TaskService(
     @Transactional(readOnly = true)
     override fun getUnplannedTasks(householdId: HouseholdId): List<Task> =
         taskRepository.findAllOpenByHouseholdIdAndDateIsNull(householdId)
+
+    @Transactional(readOnly = true)
+    override fun getOverdueTasks(householdId: HouseholdId): List<Task> =
+        taskRepository.findAllOpenByHouseholdIdAndDateBefore(householdId, LocalDate.now())
 
     override fun complete(taskId: TaskId): Task {
         val task = taskRepository.findById(taskId) ?: throw TaskNotFoundException(taskId)

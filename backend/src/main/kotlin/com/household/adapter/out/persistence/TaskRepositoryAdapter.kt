@@ -36,6 +36,10 @@ class TaskRepositoryAdapter(
         jpa.findAllByHouseholdIdAndDateIsNullAndStatus(householdId.value, TaskStatus.OPEN.name)
             .map { it.toDomain() }
 
+    override fun findAllOpenByHouseholdIdAndDateBefore(householdId: HouseholdId, date: LocalDate): List<Task> =
+        jpa.findAllByHouseholdIdAndDateBeforeAndStatus(householdId.value, date, TaskStatus.OPEN.name)
+            .map { it.toDomain() }
+
     override fun findAllByProjectId(projectId: ProjectId): List<Task> =
         jpa.findAllByProjectId(projectId.value).map { it.toDomain() }
 

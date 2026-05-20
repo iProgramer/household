@@ -12,6 +12,7 @@
   import { isoDate, formatDate } from '$lib/utils/dates';
 
   let todayTasks = $state<Task[]>([]);
+  let overdueTasks = $state<Task[]>([]);
   let todayEvents = $state<FixedEvent[]>([]);
   let todayMeals = $state<Meal[]>([]);
   let mealIdeas = $state<Meal[]>([]);
@@ -35,13 +36,15 @@
     loading = true;
     loadError = '';
     try {
-      const [t, e, m, ideas] = await Promise.all([
+      const [t, o, e, m, ideas] = await Promise.all([
         tasksApi.today(),
+        tasksApi.overdue(),
         eventsApi.today(),
         mealsApi.forDate(todayIso),
         mealsApi.ideas(),
       ]);
       todayTasks = t;
+      overdueTasks = o;
       todayEvents = e;
       todayMeals = m;
       mealIdeas = ideas;
@@ -65,6 +68,12 @@
   async function unscheduleTask(id: string) {
     await tasksApi.update(id, { date: null });
     todayTasks = todayTasks.filter((t) => t.id !== id);
+    overdueTasks = overdueTasks.filter((t) => t.id !== id);
+  }
+
+  async function completeOverdue(id: string) {
+    await tasksApi.complete(id);
+    overdueTasks = overdueTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
   }
 
   async function unassignMeal(id: string) {
@@ -98,6 +107,19 @@
   {:else if loadError}
     <div class="state-msg" style="color: var(--accent-rose)">{loadError}</div>
   {:else}
+    {#if overdueTasks.filter(t => t.status === 'OPEN').length > 0}
+      <section class="section overdue-section">
+        <p class="section-label overdue-label">Überfällig</p>
+        {#each overdueTasks.filter(t => t.status === 'OPEN') as task (task.id)}
+          <div class="task-row">
+            <div class="task-wrap">
+              <TaskItem {task} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} />
+            </div>
+          </div>
+        {/each}
+      </section>
+    {/if}
+
     <section class="section">
       <div class="section-header">
         <p class="section-label">Termine</p>
@@ -275,6 +297,15 @@
     font-size: 0.875rem;
     margin-bottom: 0.5rem;
     list-style: none;
+  }
+
+  .overdue-section {
+    border-left: 3px solid var(--accent-rose);
+    padding-left: 0.75rem;
+  }
+
+  .overdue-label {
+    color: var(--accent-rose);
   }
 
   .meal-chips {

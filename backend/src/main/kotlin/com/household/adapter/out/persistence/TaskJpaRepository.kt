@@ -8,5 +8,6 @@ interface TaskJpaRepository : JpaRepository<TaskJpaEntity, UUID> {
     fun findAllByHouseholdIdAndDate(householdId: UUID, date: LocalDate): List<TaskJpaEntity>
     fun findAllByHouseholdIdAndDateBetween(householdId: UUID, start: LocalDate, end: LocalDate): List<TaskJpaEntity>
     fun findAllByHouseholdIdAndDateIsNullAndStatus(householdId: UUID, status: String): List<TaskJpaEntity>
+    fun findAllByHouseholdIdAndDateBeforeAndStatus(householdId: UUID, date: LocalDate, status: String): List<TaskJpaEntity>
     fun findAllByProjectId(projectId: UUID): List<TaskJpaEntity>
 }

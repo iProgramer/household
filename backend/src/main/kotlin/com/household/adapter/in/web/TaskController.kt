@@ -12,6 +12,7 @@ import com.household.domain.port.`in`.ReopenTaskUseCase
 import com.household.domain.port.`in`.CreateTaskCommand
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
+import com.household.domain.port.`in`.GetOverdueTasksUseCase
 import com.household.domain.port.`in`.GetUnplannedTasksUseCase
 import com.household.domain.port.`in`.GetWeekTasksUseCase
 import com.household.domain.port.`in`.UpdateTaskCommand
@@ -41,6 +42,7 @@ class TaskController(
     private val getTodayTasks: GetTodayTasksUseCase,
     private val getWeekTasks: GetWeekTasksUseCase,
     private val getUnplannedTasks: GetUnplannedTasksUseCase,
+    private val getOverdueTasks: GetOverdueTasksUseCase,
     private val completeTask: CompleteTaskUseCase,
     private val reopenTask: ReopenTaskUseCase,
     private val updateTask: UpdateTaskUseCase,
@@ -66,6 +68,10 @@ class TaskController(
     @GetMapping("/today")
     fun getToday(@AuthenticationPrincipal principal: AuthenticatedMember): List<TaskResponse> =
         getTodayTasks.getTodayTasks(principal.householdId).map(TaskResponse::from)
+
+    @GetMapping("/overdue")
+    fun getOverdue(@AuthenticationPrincipal principal: AuthenticatedMember): List<TaskResponse> =
+        getOverdueTasks.getOverdueTasks(principal.householdId).map(TaskResponse::from)
 
     @GetMapping("/week")
     fun getWeek(

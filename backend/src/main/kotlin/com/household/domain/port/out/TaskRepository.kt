@@ -12,5 +12,6 @@ interface TaskRepository {
     fun findAllByHouseholdIdAndDate(householdId: HouseholdId, date: LocalDate): List<Task>
     fun findAllByHouseholdIdAndDateBetween(householdId: HouseholdId, start: LocalDate, end: LocalDate): List<Task>
     fun findAllOpenByHouseholdIdAndDateIsNull(householdId: HouseholdId): List<Task>
+    fun findAllOpenByHouseholdIdAndDateBefore(householdId: HouseholdId, date: LocalDate): List<Task>
     fun findAllByProjectId(projectId: ProjectId): List<Task>
 }

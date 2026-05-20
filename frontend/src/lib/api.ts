@@ -118,6 +118,7 @@ export const auth = {
 
 export const tasks = {
   today: () => request<Task[]>('/tasks/today'),
+  overdue: () => request<Task[]>('/tasks/overdue'),
   week: (startDate: string) => request<Task[]>(`/tasks/week?startDate=${startDate}`),
   unplanned: () => request<Task[]>('/tasks/unplanned'),
   create: (data: { title: string; date?: string; assignedTo?: string; recurrence?: Recurrence; projectId?: string }) =>
