@@ -18,7 +18,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   });
   if (res.status === 204) return null as T;
-  if (res.status === 401) {
+  if (res.status === 401 && getToken()) {
     localStorage.removeItem('token');
     window.location.href = '/login';
     return new Promise(() => {});
