@@ -7,6 +7,11 @@ function getToken(): string | null {
   return localStorage.getItem('token');
 }
 
+let _onUnauthorized: (() => void) | undefined;
+export function setUnauthorizedHandler(cb: () => void) {
+  _onUnauthorized = cb;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
@@ -19,8 +24,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   if (res.status === 204) return null as T;
   if (res.status === 401 && getToken()) {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+    _onUnauthorized?.();
     return new Promise(() => {});
   }
   if (!res.ok) {

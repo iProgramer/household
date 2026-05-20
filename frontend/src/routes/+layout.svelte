@@ -4,7 +4,12 @@
   import { browser } from '$app/environment';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
   import { membersStore } from '$lib/stores/members';
-  import { household as householdApi } from '$lib/api';
+  import { household as householdApi, setUnauthorizedHandler } from '$lib/api';
+
+  setUnauthorizedHandler(() => {
+    authStore.logout();
+    goto('/login');
+  });
   import '../app.css';
 
   let { children } = $props();
