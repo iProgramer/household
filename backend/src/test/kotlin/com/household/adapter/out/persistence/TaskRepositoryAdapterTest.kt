@@ -202,6 +202,36 @@ class TaskRepositoryAdapterTest {
         assertNull(found.recurrenceRule)
     }
 
+    @Test
+    fun `findAllOpenByHouseholdIdAndDateBefore returns open tasks with past date`() {
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
+
+        adapter.save(Task.create(HOUSEHOLD_ID, "Überfällig", yesterday))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Heute", today))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Ohne Datum", null))
+        adapter.save(Task.create(HOUSEHOLD_ID, "Erledigt gestern", yesterday).complete())
+
+        val result = adapter.findAllOpenByHouseholdIdAndDateBefore(HOUSEHOLD_ID, today)
+
+        assertEquals(1, result.size)
+        assertEquals("Überfällig", result[0].title)
+    }
+
+    @Test
+    fun `findAllOpenByHouseholdIdAndDateBefore excludes other households`() {
+        val yesterday = LocalDate.now().minusDays(1)
+        val otherHousehold = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000002"))
+
+        adapter.save(Task.create(HOUSEHOLD_ID, "Unser Haushalt", yesterday))
+        adapter.save(Task.create(otherHousehold, "Anderer Haushalt", yesterday))
+
+        val result = adapter.findAllOpenByHouseholdIdAndDateBefore(HOUSEHOLD_ID, LocalDate.now())
+
+        assertEquals(1, result.size)
+        assertEquals("Unser Haushalt", result[0].title)
+    }
+
     companion object {
         val HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
     }

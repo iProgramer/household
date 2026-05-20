@@ -204,6 +204,28 @@ class TaskServiceTest {
         assertEquals(RecurrenceRule.Weekly, result.recurrenceRule)
     }
 
+    @Test
+    fun `getOverdueTasks delegates to repository with today as boundary`() {
+        val today = LocalDate.now()
+        every { taskRepository.findAllOpenByHouseholdIdAndDateBefore(HOUSEHOLD_ID, today) } returns emptyList()
+
+        service.getOverdueTasks(HOUSEHOLD_ID)
+
+        verify { taskRepository.findAllOpenByHouseholdIdAndDateBefore(HOUSEHOLD_ID, today) }
+    }
+
+    @Test
+    fun `getOverdueTasks returns only open tasks with past date`() {
+        val yesterday = LocalDate.now().minusDays(1)
+        val tasks = listOf(Task.create(HOUSEHOLD_ID, "Vergessen", yesterday))
+        every { taskRepository.findAllOpenByHouseholdIdAndDateBefore(HOUSEHOLD_ID, LocalDate.now()) } returns tasks
+
+        val result = service.getOverdueTasks(HOUSEHOLD_ID)
+
+        assertEquals(1, result.size)
+        assertEquals("Vergessen", result[0].title)
+    }
+
     companion object {
         val HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
     }
