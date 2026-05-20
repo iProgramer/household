@@ -10,6 +10,7 @@ import com.household.domain.model.TaskId
 import com.household.domain.model.TaskNotFoundException
 import com.household.domain.port.`in`.CompleteTaskUseCase
 import com.household.domain.port.`in`.CreateTaskUseCase
+import com.household.domain.port.`in`.GetOverdueTasksUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
 import com.household.domain.port.`in`.GetUnplannedTasksUseCase
 import com.household.domain.port.`in`.GetWeekTasksUseCase
@@ -51,6 +52,9 @@ class TaskControllerTest {
 
     @MockkBean
     lateinit var getUnplannedTasks: GetUnplannedTasksUseCase
+
+    @MockkBean
+    lateinit var getOverdueTasks: GetOverdueTasksUseCase
 
     @MockkBean
     lateinit var completeTask: CompleteTaskUseCase
