@@ -53,3 +53,20 @@ Frontend-Aufwand: A ~2h, B ~1h, C ~1h.
 konkrete Darstellung noch offen.
 
 ---
+
+## BDD-Tests mit Cucumber (technische Verbesserung)
+
+**Kontext:** Aktuell werden Szenario-Tests als plain Kotlin/JUnit geschrieben (`MealScenarioTest` etc.).
+BDD würde die Tests in natürlicher Sprache (Gherkin) ausdrücken — lesbar auch ohne Kotlin-Kenntnisse.
+
+**Framework-Optionen:**
+- **Cucumber (JVM)** — Klassiker, Gherkin-Syntax, große Community
+- **Kotest BDD** — Kotlin-nativ, `given/when/then` als DSL, kein separates Gherkin-File
+
+**Wann sinnvoll:**
+Sobald Nicht-Entwickler Akzeptanzkriterien lesen oder mitformulieren sollen.
+Für ein reines Entwickler-Projekt ist der Overhead (Gherkin-Dateien + Step-Definitions) aktuell höher als der Nutzen.
+
+**Aufwand:** ~1 Tag für Migration der bestehenden Szenario-Tests auf Cucumber.
+
+---

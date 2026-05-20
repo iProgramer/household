@@ -18,6 +18,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     },
   });
   if (res.status === 204) return null as T;
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+    return new Promise(() => {});
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new ApiError(res.status, body.error ?? 'Unknown error');
