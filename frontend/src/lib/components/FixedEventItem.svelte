@@ -12,6 +12,7 @@
   } = $props();
 
   let editing = $state(false);
+  let menuOpen = $state(false);
   let editTitle = $state('');
   let inputEl = $state<HTMLInputElement | null>(null);
 
@@ -36,6 +37,10 @@
   }
 </script>
 
+{#if menuOpen}
+  <div role="presentation" class="backdrop" onclick={() => { menuOpen = false; }}></div>
+{/if}
+
 <div class="event-item card">
   <span class="event-dot"></span>
 
@@ -54,20 +59,39 @@
     {/if}
   {/if}
 
-  {#if onrename && !editing}
-    <button class="icon-btn" onclick={startEdit} title="Bearbeiten" aria-label="Bearbeiten">
-      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M11 2l3 3-9 9H2v-3L11 2z"/>
-      </svg>
-    </button>
-  {/if}
+  {#if !editing && (onrename || ondelete)}
+    <div class="menu-wrap">
+      <button
+        class="menu-btn"
+        onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
+        aria-label="Aktionen"
+      >⋮</button>
 
-  {#if ondelete}
-    <button class="delete-btn" onclick={ondelete} title="Löschen" aria-label="Termin löschen">✕</button>
+      {#if menuOpen}
+        <div class="menu-dropdown" role="menu">
+          {#if onrename}
+            <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; startEdit(); }}>
+              Bearbeiten
+            </button>
+          {/if}
+          {#if ondelete}
+            <button class="menu-item danger" role="menuitem" onclick={() => { menuOpen = false; ondelete?.(); }}>
+              Löschen
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
   {/if}
 </div>
 
 <style>
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+  }
+
   .event-item {
     display: flex;
     align-items: center;
@@ -107,26 +131,56 @@
     margin-left: auto;
   }
 
-  .icon-btn {
-    color: var(--color-muted);
-    padding: 0.125rem 0.25rem;
-    display: flex;
-    align-items: center;
+  .menu-wrap {
+    position: relative;
     flex-shrink: 0;
   }
 
-  .icon-btn:hover {
+  .menu-btn {
+    color: var(--color-muted);
+    font-size: 1.125rem;
+    line-height: 1;
+    padding: 0 0.3rem;
+    letter-spacing: -0.05em;
+  }
+
+  .menu-btn:hover {
     color: var(--color-text);
   }
 
-  .delete-btn {
-    color: var(--color-muted);
-    font-size: 0.8125rem;
-    padding: 0.125rem 0.25rem;
-    flex-shrink: 0;
+  .menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 2px 2px 0 var(--color-border);
+    min-width: 9rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  .delete-btn:hover {
+  .menu-item {
+    padding: 0.625rem 0.875rem;
+    text-align: left;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    white-space: nowrap;
+    border-bottom: var(--border-width) solid var(--color-divider);
+  }
+
+  .menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .menu-item:hover {
+    background: var(--color-bg);
+  }
+
+  .menu-item.danger {
     color: var(--accent-rose);
   }
 </style>

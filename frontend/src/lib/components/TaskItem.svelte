@@ -23,6 +23,7 @@
 
   const accent = $derived(taskAccent(task.id));
   let busy = $state(false);
+  let menuOpen = $state(false);
   let editing = $state(false);
   let editTitle = $state('');
   let editAssignedTo = $state<string | null | undefined>(undefined);
@@ -123,28 +124,44 @@
       </span>
     {/if}
 
-    {#if onedit && task.status === 'OPEN'}
-      <button class="edit-btn" onclick={startEdit} title="Bearbeiten" aria-label="Bearbeiten">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 2l3 3-9 9H2v-3L11 2z"/>
-        </svg>
-      </button>
-    {/if}
+    {#if !editing && (onedit || ondelete || onunschedule)}
+      <div class="menu-wrap">
+        <button
+          class="menu-btn"
+          onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
+          aria-label="Aktionen"
+        >⋮</button>
 
-    {#if ondelete}
-      <button class="delete-btn" onclick={ondelete} title="Löschen" aria-label="Aufgabe löschen">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="2 4 14 4"/>
-          <path d="M5 4V2h6v2"/>
-          <path d="M3 4l1 10h8l1-10"/>
-        </svg>
-      </button>
-    {/if}
-
-    {#if onunschedule && task.date}
-      <button class="unschedule-btn" onclick={onunschedule} title="Zurückstellen" aria-label="Zurückstellen">↩</button>
+        {#if menuOpen}
+          <div class="menu-dropdown" role="menu">
+            {#if onedit && task.status === 'OPEN'}
+              <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; startEdit(); }}>
+                Bearbeiten
+              </button>
+            {/if}
+            {#if onunschedule && task.date}
+              <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; onunschedule?.(); }}>
+                Zurückstellen
+              </button>
+            {/if}
+            {#if ondelete}
+              <button class="menu-item danger" role="menuitem" onclick={() => { menuOpen = false; ondelete?.(); }}>
+                Löschen
+              </button>
+            {/if}
+          </div>
+        {/if}
+      </div>
     {/if}
   </div>
+
+  {#if menuOpen}
+    <div
+      role="presentation"
+      class="backdrop"
+      onclick={() => { menuOpen = false; }}
+    ></div>
+  {/if}
 
   {#if editing && $membersStore.length > 0}
     <div class="edit-chips-row">
@@ -259,39 +276,64 @@
     font-family: inherit;
   }
 
-  .edit-btn {
-    color: var(--color-muted);
-    padding: 0.125rem 0.25rem;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
   }
 
-  .edit-btn:hover {
+  .menu-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .menu-btn {
+    color: var(--color-muted);
+    font-size: 1.125rem;
+    line-height: 1;
+    padding: 0 0.3rem;
+    flex-shrink: 0;
+    letter-spacing: -0.05em;
+  }
+
+  .menu-btn:hover {
     color: var(--color-text);
   }
 
-  .delete-btn {
-    color: var(--color-muted);
-    padding: 0.125rem 0.25rem;
-    flex-shrink: 0;
+  .menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 2px 2px 0 var(--color-border);
+    min-width: 9rem;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  .delete-btn:hover {
-    color: var(--accent-rose);
-  }
-
-  .unschedule-btn {
+  .menu-item {
+    padding: 0.625rem 0.875rem;
+    text-align: left;
     font-size: 0.875rem;
-    color: var(--color-muted);
-    padding: 0.125rem 0.25rem;
-    flex-shrink: 0;
+    color: var(--color-text);
+    white-space: nowrap;
+    border-bottom: var(--border-width) solid var(--color-divider);
   }
 
-  .unschedule-btn:hover {
-    color: var(--color-text);
+  .menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .menu-item:hover {
+    background: var(--color-bg);
+  }
+
+  .menu-item.danger {
+    color: var(--accent-rose);
   }
 
   .edit-chips-row {
