@@ -11,6 +11,7 @@
   let inputEl = $state<HTMLInputElement | undefined>(undefined);
   let editingId = $state<string | null>(null);
   let editTitle = $state('');
+  let openMenuId = $state<string | null>(null);
 
   async function load() {
     loading = true;
@@ -111,6 +112,10 @@
     <ul class="ideas-list">
       {#each ideas as idea (idea.id)}
         <li class="idea-item card">
+          {#if openMenuId === idea.id}
+            <div role="presentation" class="backdrop" onclick={() => { openMenuId = null; }}></div>
+          {/if}
+
           {#if editingId === idea.id}
             <input
               bind:this={editInputEl}
@@ -121,13 +126,28 @@
             />
           {:else}
             <span class="idea-title">{idea.title}</span>
-            <button class="icon-btn" onclick={() => startEdit(idea)} aria-label="Bearbeiten">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 2l3 3-9 9H2v-3L11 2z"/>
-              </svg>
-            </button>
           {/if}
-          <button class="delete-btn" onclick={() => deleteIdea(idea.id)} aria-label="Löschen">✕</button>
+
+          {#if editingId !== idea.id}
+            <div class="menu-wrap">
+              <button
+                class="menu-btn"
+                onclick={(e) => { e.stopPropagation(); openMenuId = openMenuId === idea.id ? null : idea.id; }}
+                aria-label="Aktionen"
+              >⋮</button>
+
+              {#if openMenuId === idea.id}
+                <div class="menu-dropdown" role="menu">
+                  <button class="menu-item" role="menuitem" onclick={() => { openMenuId = null; startEdit(idea); }}>
+                    Bearbeiten
+                  </button>
+                  <button class="menu-item danger" role="menuitem" onclick={() => { openMenuId = null; deleteIdea(idea.id); }}>
+                    Löschen
+                  </button>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </li>
       {/each}
     </ul>
@@ -219,25 +239,62 @@
     font-family: inherit;
   }
 
-  .icon-btn {
-    color: var(--color-muted);
-    padding: 0.125rem 0.375rem;
-    display: flex;
-    align-items: center;
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+  }
+
+  .menu-wrap {
+    position: relative;
     flex-shrink: 0;
   }
 
-  .icon-btn:hover {
+  .menu-btn {
+    color: var(--color-muted);
+    font-size: 1.125rem;
+    line-height: 1;
+    padding: 0 0.3rem;
+    letter-spacing: -0.05em;
+  }
+
+  .menu-btn:hover {
     color: var(--color-text);
   }
 
-  .delete-btn {
-    color: var(--color-muted);
-    font-size: 0.875rem;
-    padding: 0.25rem 0.375rem;
+  .menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    box-shadow: 2px 2px 0 var(--color-border);
+    min-width: 9rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  .delete-btn:hover {
+  .menu-item {
+    padding: 0.625rem 0.875rem;
+    text-align: left;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    white-space: nowrap;
+    border-bottom: var(--border-width) solid var(--color-divider);
+  }
+
+  .menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .menu-item:hover {
+    background: var(--color-bg);
+  }
+
+  .menu-item.danger {
     color: var(--accent-rose);
   }
 
