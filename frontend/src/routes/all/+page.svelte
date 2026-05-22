@@ -45,10 +45,10 @@
     allTasks = allTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
   }
 
-  async function editTask(id: string, title: string) {
+  async function editTask(id: string, title: string, assignedTo: string | null | undefined) {
     const task = allTasks.find((t) => t.id === id);
     if (!task) return;
-    const updated = await tasksApi.update(id, { date: task.date, assignedTo: task.assignedTo, title });
+    const updated = await tasksApi.update(id, { date: task.date, assignedTo: assignedTo ?? null, title });
     allTasks = allTasks.map((t) => (t.id === id ? updated : t));
   }
 
@@ -98,7 +98,7 @@
     <div class="tasks-list">
       {#each filtered as task (task.id)}
         <div class="task-meta-row">
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
           {#if task.date}
             <span class="date-badge muted">{formatShortDate(task.date)}</span>
           {/if}

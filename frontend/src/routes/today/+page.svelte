@@ -74,10 +74,10 @@
     overdueTasks = overdueTasks.filter((t) => t.id !== id);
   }
 
-  async function editTask(id: string, title: string) {
+  async function editTask(id: string, title: string, assignedTo: string | null | undefined) {
     const task = todayTasks.find((t) => t.id === id) ?? overdueTasks.find((t) => t.id === id);
     if (!task) return;
-    const updated = await tasksApi.update(id, { date: task.date, assignedTo: task.assignedTo, title });
+    const updated = await tasksApi.update(id, { date: task.date, assignedTo: assignedTo ?? null, title });
     todayTasks = todayTasks.map((t) => (t.id === id ? updated : t));
     overdueTasks = overdueTasks.map((t) => (t.id === id ? updated : t));
   }
@@ -130,7 +130,7 @@
         {#each overdueTasks.filter(t => t.status === 'OPEN') as task (task.id)}
           <div class="task-row">
             <div class="task-wrap">
-              <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+              <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
             </div>
           </div>
         {/each}
@@ -174,7 +174,7 @@
       {#each openTasks as task (task.id)}
         <div class="task-row">
           <div class="task-wrap">
-            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
           </div>
           {#if task.assignedTo}
             <PersonAvatar memberId={task.assignedTo} {currentMemberId} email={currentEmail} size={24} />

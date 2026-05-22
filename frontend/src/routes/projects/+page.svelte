@@ -82,10 +82,10 @@
     );
   }
 
-  async function editTask(taskId: string, projectId: string, title: string) {
+  async function editTask(taskId: string, projectId: string, title: string, assignedTo: string | null | undefined) {
     const task = detailCache[projectId]?.tasks.find((t) => t.id === taskId);
     if (!task) return;
-    const updated = await tasksApi.update(taskId, { date: task.date, assignedTo: task.assignedTo, title });
+    const updated = await tasksApi.update(taskId, { date: task.date, assignedTo: assignedTo ?? null, title });
     if (detailCache[projectId]) {
       detailCache = {
         ...detailCache,
@@ -211,7 +211,7 @@
           {@const detail = detailCache[project.id]}
           <div class="project-tasks">
             {#each detail.tasks as task (task.id)}
-              <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} onreopen={() => reopenTask(task.id, project.id)} onedit={(title) => editTask(task.id, project.id, title)} ondelete={() => deleteTask(task.id, project.id)} />
+              <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} onreopen={() => reopenTask(task.id, project.id)} onedit={(title, assignedTo) => editTask(task.id, project.id, title, assignedTo)} ondelete={() => deleteTask(task.id, project.id)} />
             {/each}
 
             <AddTaskForm

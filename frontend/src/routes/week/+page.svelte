@@ -118,10 +118,10 @@
     unplannedTasks = [...unplannedTasks, updated];
   }
 
-  async function editTask(id: string, title: string) {
+  async function editTask(id: string, title: string, assignedTo: string | null | undefined) {
     const task = weekTasks.find((t) => t.id === id) ?? unplannedTasks.find((t) => t.id === id);
     if (!task) return;
-    const updated = await tasksApi.update(id, { date: task.date, assignedTo: task.assignedTo, title });
+    const updated = await tasksApi.update(id, { date: task.date, assignedTo: assignedTo ?? null, title });
     weekTasks = weekTasks.map((t) => (t.id === id ? updated : t));
     unplannedTasks = unplannedTasks.map((t) => (t.id === id ? updated : t));
   }
@@ -230,7 +230,7 @@
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
-          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
         {/each}
         <AddTaskForm
           defaultDate={selectedDayIso}
@@ -244,7 +244,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
             <button class="schedule-btn" title="Auf ausgewählten Tag einplanen"
               onclick={() => scheduleTask(task.id, selectedDayIso)}>→</button>
           </div>
@@ -305,7 +305,7 @@
         {/if}
 
         {#each dayTasks as task (task.id)}
-          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
         {/each}
 
         <AddTaskForm
@@ -321,7 +321,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
           </div>
         {/each}
       </section>
