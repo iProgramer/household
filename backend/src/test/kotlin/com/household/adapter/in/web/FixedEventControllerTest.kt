@@ -7,11 +7,15 @@ import com.household.domain.model.FixedEvent
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.MemberId
 import com.household.domain.model.RecurrenceRule
+import com.household.domain.model.FixedEventId
 import com.household.domain.port.`in`.CreateFixedEventUseCase
+import com.household.domain.port.`in`.DeleteFixedEventUseCase
 import com.household.domain.port.`in`.GetFixedEventsForDateUseCase
 import com.household.domain.port.`in`.GetFixedEventsForWeekUseCase
+import com.household.domain.port.`in`.RenameFixedEventUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,7 +23,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import java.time.LocalDate
 import java.util.UUID
@@ -34,14 +40,11 @@ class FixedEventControllerTest {
     @MockkBean
     lateinit var jwtService: JwtService
 
-    @MockkBean
-    lateinit var createFixedEvent: CreateFixedEventUseCase
-
-    @MockkBean
-    lateinit var getForDate: GetFixedEventsForDateUseCase
-
-    @MockkBean
-    lateinit var getForWeek: GetFixedEventsForWeekUseCase
+    @MockkBean lateinit var createFixedEvent: CreateFixedEventUseCase
+    @MockkBean lateinit var getForDate: GetFixedEventsForDateUseCase
+    @MockkBean lateinit var getForWeek: GetFixedEventsForWeekUseCase
+    @MockkBean lateinit var deleteFixedEvent: DeleteFixedEventUseCase
+    @MockkBean lateinit var renameFixedEvent: RenameFixedEventUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -142,6 +145,33 @@ class FixedEventControllerTest {
     fun `GET today without token returns 401`() {
         mockMvc.get("/api/fixed-events/today").andExpect {
             status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    fun `PATCH renames fixed event and returns updated event`() {
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.of(2026, 5, 4))
+        val renamed = event.rename("Biomüll")
+        every { renameFixedEvent.rename(event.id, "Biomüll") } returns renamed
+
+        mockMvc.patch("/api/fixed-events/${event.id.value}") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Biomüll"}"""
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.title") { value("Biomüll") }
+        }
+    }
+
+    @Test
+    fun `DELETE removes fixed event and returns 204`() {
+        every { deleteFixedEvent.delete(any()) } returns Unit
+
+        mockMvc.delete("/api/fixed-events/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isNoContent() }
         }
     }
 

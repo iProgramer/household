@@ -5,6 +5,7 @@ import com.household.domain.model.FixedEventId
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.RecurrenceRule
 import com.household.domain.port.out.FixedEventRepository
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 
@@ -18,6 +19,11 @@ class FixedEventRepositoryAdapter(
 
     override fun findAllByHouseholdId(householdId: HouseholdId): List<FixedEvent> =
         jpa.findAllByHouseholdId(householdId.value).map { it.toDomain() }
+
+    override fun findById(id: FixedEventId): FixedEvent? =
+        jpa.findByIdOrNull(id.value)?.toDomain()
+
+    override fun delete(id: FixedEventId) = jpa.deleteById(id.value)
 
     private fun FixedEvent.toJpaEntity() = FixedEventJpaEntity(
         id = id.value,

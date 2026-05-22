@@ -31,6 +31,11 @@ data class FixedEvent(
         }
     }
 
+    fun rename(newTitle: String): FixedEvent {
+        require(newTitle.isNotBlank()) { "Title must not be blank" }
+        return copy(title = newTitle.trim())
+    }
+
     fun occursOn(targetDate: LocalDate): Boolean {
         if (targetDate < date) return false
         if (recurrenceRule == null) return date == targetDate

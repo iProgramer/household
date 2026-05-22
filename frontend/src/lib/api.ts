@@ -146,6 +146,9 @@ export const fixedEvents = {
   week: (startDate: string) => request<FixedEvent[]>(`/fixed-events/week?startDate=${startDate}`),
   create: (data: { title: string; date: string; recurrence?: Recurrence }) =>
     request<FixedEvent>('/fixed-events', { method: 'POST', body: JSON.stringify(data) }),
+  rename: (id: string, title: string) =>
+    request<FixedEvent>(`/fixed-events/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  delete: (id: string) => request<void>(`/fixed-events/${id}`, { method: 'DELETE' }),
 };
 
 // ── Projects ──────────────────────────────────────────────────

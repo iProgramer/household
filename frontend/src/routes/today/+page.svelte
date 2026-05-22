@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fixedEvents as eventsApi, meals as mealsApi, projects as projectsApi, ApiError } from '$lib/api';
   import type { Task, FixedEvent, Meal } from '$lib/api';
+  import FixedEventItem from '$lib/components/FixedEventItem.svelte';
   import { authStore } from '$lib/stores/auth';
   import { tasks as tasksApi } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
@@ -93,6 +94,16 @@
     overdueTasks = overdueTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
   }
 
+  async function renameEvent(id: string, title: string) {
+    const updated = await eventsApi.rename(id, title);
+    todayEvents = todayEvents.map((e) => (e.id === id ? updated : e));
+  }
+
+  async function deleteEvent(id: string) {
+    await eventsApi.delete(id);
+    todayEvents = todayEvents.filter((e) => e.id !== id);
+  }
+
   async function unassignMeal(id: string) {
     const unassigned = await mealsApi.unassign(id);
     todayMeals = todayMeals.filter((m) => m.id !== id);
@@ -154,13 +165,11 @@
       {/if}
 
       {#each todayEvents as event (event.id)}
-        <div class="event-item card">
-          <span class="event-dot"></span>
-          <span>{event.title}</span>
-          {#if event.recurrence}
-            <span class="muted badge">↻</span>
-          {/if}
-        </div>
+        <FixedEventItem
+          {event}
+          onrename={(title) => renameEvent(event.id, title)}
+          ondelete={() => deleteEvent(event.id)}
+        />
       {/each}
 
       {#if todayEvents.length === 0 && !showEventForm}
@@ -259,29 +268,6 @@
   .add-section-btn:hover {
     color: var(--color-text);
     border-color: var(--color-border);
-  }
-
-  .event-item {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    padding: 0.625rem 1rem;
-    margin-bottom: 0.5rem;
-    background: var(--accent-amber-bg);
-  }
-
-  .event-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent-amber);
-    border: 1px solid var(--color-border);
-    flex-shrink: 0;
-  }
-
-  .badge {
-    margin-left: auto;
-    font-size: 0.75rem;
   }
 
   .empty-hint {

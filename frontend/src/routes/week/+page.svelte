@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { tasks as tasksApi, fixedEvents as eventsApi, meals as mealsApi, projects as projectsApi, ApiError } from '$lib/api';
   import type { Task, FixedEvent, Meal } from '$lib/api';
+  import FixedEventItem from '$lib/components/FixedEventItem.svelte';
   import { authStore } from '$lib/stores/auth';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
@@ -87,6 +88,16 @@
   function tasksForDay(dayIso: string)  { return weekTasks.filter((t) => t.date === dayIso); }
   function eventsForDay(dayIso: string) { return weekEvents.filter((e) => e.date === dayIso); }
   function mealsForDay(dayIso: string)  { return weekPlannedMeals.filter((m) => m.date === dayIso); }
+
+  async function renameEvent(id: string, title: string) {
+    const updated = await eventsApi.rename(id, title);
+    weekEvents = weekEvents.map((e) => (e.id === id ? updated : e));
+  }
+
+  async function deleteEvent(id: string) {
+    await eventsApi.delete(id);
+    weekEvents = weekEvents.filter((e) => e.id !== id);
+  }
 
   async function unassignMeal(id: string) {
     const unassigned = await mealsApi.unassign(id);
@@ -202,9 +213,13 @@
       {/if}
 
       {#if selectedEvents.length > 0}
-        <div class="events-row">
+        <div class="events-list">
           {#each selectedEvents as event (event.id)}
-            <span class="event-chip">{event.title}{#if event.recurrence} ↻{/if}</span>
+            <FixedEventItem
+              {event}
+              onrename={(title) => renameEvent(event.id, title)}
+              ondelete={() => deleteEvent(event.id)}
+            />
           {/each}
         </div>
       {/if}
@@ -286,9 +301,13 @@
         {/if}
 
         {#if dayEvents.length > 0}
-          <div class="events-row">
+          <div class="events-list">
             {#each dayEvents as event (event.id)}
-              <span class="event-chip">{event.title}{#if event.recurrence} ↻{/if}</span>
+              <FixedEventItem
+                {event}
+                onrename={(title) => renameEvent(event.id, title)}
+                ondelete={() => deleteEvent(event.id)}
+              />
             {/each}
           </div>
         {/if}
@@ -470,16 +489,7 @@
 
   .add-section-btn:hover { color: var(--color-text); border-color: var(--color-border); }
 
-  .events-row { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.625rem; }
-
-  .event-chip {
-    padding: 0.25rem 0.625rem;
-    background: var(--accent-amber-bg);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-pill);
-    font-size: 0.8125rem;
-    font-weight: 500;
-  }
+  .events-list { display: flex; flex-direction: column; margin-bottom: 0.25rem; }
 
   .meal-chips-row { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.5rem; }
 

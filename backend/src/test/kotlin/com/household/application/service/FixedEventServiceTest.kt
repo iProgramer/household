@@ -1,6 +1,8 @@
 package com.household.application.service
 
 import com.household.domain.model.FixedEvent
+import com.household.domain.model.FixedEventId
+import com.household.domain.model.FixedEventNotFoundException
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.RecurrenceRule
 import com.household.domain.port.`in`.CreateFixedEventCommand
@@ -10,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.UUID
@@ -116,6 +119,36 @@ class FixedEventServiceTest {
         // Each day gets its own occurrence date
         val dates = result.map { it.date }.toSet()
         assertEquals(7, dates.size)
+    }
+
+    @Test
+    fun `delete delegates to repository`() {
+        val id = FixedEventId(UUID.randomUUID())
+        every { repo.delete(id) } returns Unit
+
+        service.delete(id)
+
+        verify { repo.delete(id) }
+    }
+
+    @Test
+    fun `rename updates event title`() {
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", monday)
+        every { repo.findById(event.id) } returns event
+        every { repo.save(any()) } answers { firstArg() }
+
+        val result = service.rename(event.id, "Biomüll")
+
+        assertEquals("Biomüll", result.title)
+        verify { repo.save(match { it.title == "Biomüll" }) }
+    }
+
+    @Test
+    fun `rename throws FixedEventNotFoundException when event does not exist`() {
+        val unknownId = FixedEventId(UUID.randomUUID())
+        every { repo.findById(unknownId) } returns null
+
+        assertThrows<FixedEventNotFoundException> { service.rename(unknownId, "Neuer Titel") }
     }
 
     companion object {
