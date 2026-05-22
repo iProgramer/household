@@ -45,6 +45,13 @@
     allTasks = allTasks.map((t) => (t.id === id ? { ...t, status: 'OPEN' } : t));
   }
 
+  async function editTask(id: string, title: string) {
+    const task = allTasks.find((t) => t.id === id);
+    if (!task) return;
+    const updated = await tasksApi.update(id, { date: task.date, assignedTo: task.assignedTo, title });
+    allTasks = allTasks.map((t) => (t.id === id ? updated : t));
+  }
+
   function sortTasks(tasks: Task[]) {
     return [...tasks].sort((a, b) => {
       if (a.date && b.date) return a.date.localeCompare(b.date);
@@ -86,7 +93,7 @@
     <div class="tasks-list">
       {#each filtered as task (task.id)}
         <div class="task-meta-row">
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} />
           {#if task.date}
             <span class="date-badge muted">{formatShortDate(task.date)}</span>
           {/if}

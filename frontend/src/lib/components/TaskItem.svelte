@@ -8,15 +8,42 @@
     oncomplete,
     onreopen,
     onunschedule,
+    onedit,
   }: {
     task: Task;
     oncomplete?: () => void | Promise<void>;
     onreopen?: () => void | Promise<void>;
     onunschedule?: () => void | Promise<void>;
+    onedit?: (newTitle: string) => Promise<void>;
   } = $props();
 
   const accent = $derived(taskAccent(task.id));
   let busy = $state(false);
+  let editing = $state(false);
+  let editTitle = $state('');
+  let inputEl = $state<HTMLInputElement | null>(null);
+
+  async function startEdit() {
+    editTitle = task.title;
+    editing = true;
+    await Promise.resolve();
+    inputEl?.focus();
+    inputEl?.select();
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    editing = false;
+    const trimmed = editTitle.trim();
+    if (trimmed && trimmed !== task.title) {
+      await onedit?.(trimmed);
+    }
+  }
+
+  function handleEditKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+    if (e.key === 'Escape') { editing = false; }
+  }
 
   const assignedMember = $derived(
     task.assignedTo ? $membersStore.find((m) => m.id === task.assignedTo) ?? null : null
@@ -56,7 +83,17 @@
     {#if task.status === 'DONE'}✓{/if}
   </button>
 
-  <span class="title" class:strikethrough={task.status === 'DONE'}>{task.title}</span>
+  {#if editing}
+    <input
+      bind:this={inputEl}
+      class="title-input"
+      bind:value={editTitle}
+      onblur={saveEdit}
+      onkeydown={handleEditKeydown}
+    />
+  {:else}
+    <span class="title" class:strikethrough={task.status === 'DONE'}>{task.title}</span>
+  {/if}
 
   {#if task.recurrence}
     <span class="badge" title="Wiederkehrend">↻</span>
@@ -70,6 +107,14 @@
     >
       {assignedMember.email[0].toUpperCase()}
     </span>
+  {/if}
+
+  {#if onedit && task.status === 'OPEN'}
+    <button class="edit-btn" onclick={startEdit} title="Bearbeiten" aria-label="Bearbeiten">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 2l3 3-9 9H2v-3L11 2z"/>
+      </svg>
+    </button>
   {/if}
 
   {#if onunschedule && task.date}
@@ -136,6 +181,29 @@
   .badge {
     font-size: 0.75rem;
     color: var(--color-muted);
+  }
+
+  .title-input {
+    flex: 1;
+    font-size: 0.9375rem;
+    border: none;
+    border-bottom: var(--border-width) solid var(--color-border);
+    background: transparent;
+    outline: none;
+    padding: 0;
+    font-family: inherit;
+  }
+
+  .edit-btn {
+    color: var(--color-muted);
+    padding: 0.125rem 0.25rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .edit-btn:hover {
+    color: var(--color-text);
   }
 
   .unschedule-btn {

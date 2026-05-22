@@ -9,6 +9,7 @@ data class UpdateTaskCommand(
     val taskId: TaskId,
     val date: LocalDate?,       // null = remove date (unplan)
     val assignedTo: MemberId?,  // null = unassign
+    val title: String? = null,  // null = no change
 )
 
 interface UpdateTaskUseCase {

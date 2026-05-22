@@ -134,7 +134,7 @@ export const tasks = {
     request<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
   complete: (id: string) => request<Task>(`/tasks/${id}/complete`, { method: 'POST' }),
   reopen:   (id: string) => request<Task>(`/tasks/${id}/reopen`,   { method: 'POST' }),
-  update: (id: string, data: { date?: string | null; assignedTo?: string | null }) =>
+  update: (id: string, data: { date?: string | null; assignedTo?: string | null; title?: string }) =>
     request<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 

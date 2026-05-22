@@ -43,6 +43,10 @@ data class Task(
     fun reopen(): Task = copy(status = TaskStatus.OPEN)
     fun reschedule(newDate: LocalDate?): Task = copy(date = newDate)
     fun reassign(memberId: MemberId?): Task = copy(assignedTo = memberId)
+    fun rename(newTitle: String): Task {
+        require(newTitle.isNotBlank()) { "Title must not be blank" }
+        return copy(title = newTitle.trim())
+    }
 
     fun nextOccurrence(): Task? {
         if (recurrenceRule == null || date == null) return null

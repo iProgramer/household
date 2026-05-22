@@ -59,8 +59,9 @@ class TaskService(
 
     override fun update(command: UpdateTaskCommand): Task {
         val task = taskRepository.findById(command.taskId) ?: throw TaskNotFoundException(command.taskId)
+        val updated = task.reschedule(command.date).reassign(command.assignedTo)
         return taskRepository.save(
-            task.reschedule(command.date).reassign(command.assignedTo)
+            if (command.title != null) updated.rename(command.title) else updated
         )
     }
 }

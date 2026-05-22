@@ -102,6 +102,7 @@ class TaskController(
                 taskId = TaskId(id),
                 date = request.date,
                 assignedTo = request.assignedTo?.let { MemberId(it) },
+                title = request.title,
             )
         )
     )
@@ -118,6 +119,7 @@ data class CreateTaskRequest(
 data class UpdateTaskRequest(
     val date: LocalDate?,
     val assignedTo: UUID? = null,
+    val title: String? = null,
 )
 
 data class RecurrenceRequest(val type: String, val weekday: String? = null) {
