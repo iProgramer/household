@@ -177,6 +177,8 @@ export const meals = {
   forDate: (date: string) => request<Meal[]>(`/meals/date/${date}`),
   forWeek: (startDate: string) => request<Meal[]>(`/meals/week?startDate=${startDate}`),
   create: (title: string) => request<Meal>('/meals', { method: 'POST', body: JSON.stringify({ title }) }),
+  rename: (id: string, title: string) =>
+    request<Meal>(`/meals/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
   assign: (id: string, date: string) =>
     request<Meal>(`/meals/${id}/assign`, { method: 'PUT', body: JSON.stringify({ date }) }),
   unassign: (id: string) => request<Meal>(`/meals/${id}/unassign`, { method: 'PUT' }),

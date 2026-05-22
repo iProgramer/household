@@ -14,6 +14,7 @@ import com.household.domain.port.`in`.DeleteMealUseCase
 import com.household.domain.port.`in`.GetMealIdeasUseCase
 import com.household.domain.port.`in`.GetMealsForDateUseCase
 import com.household.domain.port.`in`.GetMealsForWeekUseCase
+import com.household.domain.port.`in`.RenameMealUseCase
 import com.household.domain.port.`in`.UnassignMealUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -27,6 +28,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
 import java.time.LocalDate
@@ -47,6 +49,7 @@ class MealControllerTest {
     @MockkBean lateinit var assignMeal: AssignMealUseCase
     @MockkBean lateinit var unassignMeal: UnassignMealUseCase
     @MockkBean lateinit var deleteMeal: DeleteMealUseCase
+    @MockkBean lateinit var renameMeal: RenameMealUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -148,6 +151,22 @@ class MealControllerTest {
         }.andExpect {
             status { isOk() }
             jsonPath("$.status") { value("IDEA") }
+        }
+    }
+
+    @Test
+    fun `PATCH renames meal and returns updated meal`() {
+        val meal = Meal.createIdea(HOUSEHOLD_ID, "Pasta")
+        val renamed = meal.rename("Pasta Bolognese")
+        every { renameMeal.rename(meal.id, "Pasta Bolognese") } returns renamed
+
+        mockMvc.patch("/api/meals/${meal.id.value}") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Pasta Bolognese"}"""
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.title") { value("Pasta Bolognese") }
         }
     }
 

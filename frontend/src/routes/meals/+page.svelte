@@ -9,6 +9,8 @@
   let newTitle = $state('');
   let saving = $state(false);
   let inputEl = $state<HTMLInputElement | undefined>(undefined);
+  let editingId = $state<string | null>(null);
+  let editTitle = $state('');
 
   async function load() {
     loading = true;
@@ -39,6 +41,32 @@
   async function deleteIdea(id: string) {
     await mealsApi.delete(id);
     ideas = ideas.filter((m) => m.id !== id);
+  }
+
+  let editInputEl = $state<HTMLInputElement | null>(null);
+
+  async function startEdit(idea: Meal) {
+    editingId = idea.id;
+    editTitle = idea.title;
+    await Promise.resolve();
+    editInputEl?.focus();
+    editInputEl?.select();
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    const id = editingId;
+    editingId = null;
+    const trimmed = editTitle.trim();
+    const original = ideas.find((m) => m.id === id);
+    if (!trimmed || trimmed === original?.title) return;
+    const updated = await mealsApi.rename(id, trimmed);
+    ideas = ideas.map((m) => (m.id === id ? updated : m));
+  }
+
+  function handleEditKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
+    if (e.key === 'Escape') { editingId = null; }
   }
 
   function onKeydown(e: KeyboardEvent) {
@@ -83,7 +111,22 @@
     <ul class="ideas-list">
       {#each ideas as idea (idea.id)}
         <li class="idea-item card">
-          <span class="idea-title">{idea.title}</span>
+          {#if editingId === idea.id}
+            <input
+              bind:this={editInputEl}
+              class="edit-input"
+              bind:value={editTitle}
+              onblur={saveEdit}
+              onkeydown={handleEditKeydown}
+            />
+          {:else}
+            <span class="idea-title">{idea.title}</span>
+            <button class="icon-btn" onclick={() => startEdit(idea)} aria-label="Bearbeiten">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 2l3 3-9 9H2v-3L11 2z"/>
+              </svg>
+            </button>
+          {/if}
           <button class="delete-btn" onclick={() => deleteIdea(idea.id)} aria-label="Löschen">✕</button>
         </li>
       {/each}
@@ -161,7 +204,31 @@
   }
 
   .idea-title {
+    flex: 1;
     font-size: 0.9375rem;
+  }
+
+  .edit-input {
+    flex: 1;
+    font-size: 0.9375rem;
+    border: none;
+    border-bottom: var(--border-width) solid var(--color-border);
+    background: transparent;
+    outline: none;
+    padding: 0;
+    font-family: inherit;
+  }
+
+  .icon-btn {
+    color: var(--color-muted);
+    padding: 0.125rem 0.375rem;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .icon-btn:hover {
+    color: var(--color-text);
   }
 
   .delete-btn {

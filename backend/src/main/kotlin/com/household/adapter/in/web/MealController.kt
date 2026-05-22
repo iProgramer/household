@@ -12,12 +12,14 @@ import com.household.domain.port.`in`.DeleteMealUseCase
 import com.household.domain.port.`in`.GetMealIdeasUseCase
 import com.household.domain.port.`in`.GetMealsForDateUseCase
 import com.household.domain.port.`in`.GetMealsForWeekUseCase
+import com.household.domain.port.`in`.RenameMealUseCase
 import com.household.domain.port.`in`.UnassignMealUseCase
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -39,6 +41,7 @@ class MealController(
     private val assignMeal: AssignMealUseCase,
     private val unassignMeal: UnassignMealUseCase,
     private val deleteMeal: DeleteMealUseCase,
+    private val renameMeal: RenameMealUseCase,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -76,6 +79,12 @@ class MealController(
         @AuthenticationPrincipal principal: AuthenticatedMember,
     ): MealResponse = MealResponse.from(unassignMeal.unassign(MealId(id)))
 
+    @PatchMapping("/{id}")
+    fun rename(
+        @PathVariable id: UUID,
+        @RequestBody request: RenameMealRequest,
+    ): MealResponse = MealResponse.from(renameMeal.rename(MealId(id), request.title))
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun delete(
@@ -86,6 +95,7 @@ class MealController(
 
 data class CreateMealRequest(val title: String)
 data class AssignMealRequest(val date: LocalDate)
+data class RenameMealRequest(val title: String)
 
 data class MealResponse(
     val id: UUID,

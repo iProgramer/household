@@ -12,6 +12,7 @@ import com.household.domain.port.`in`.DeleteMealUseCase
 import com.household.domain.port.`in`.GetMealIdeasUseCase
 import com.household.domain.port.`in`.GetMealsForDateUseCase
 import com.household.domain.port.`in`.GetMealsForWeekUseCase
+import com.household.domain.port.`in`.RenameMealUseCase
 import com.household.domain.port.`in`.UnassignMealUseCase
 import com.household.domain.port.out.MealRepository
 import org.springframework.stereotype.Service
@@ -23,7 +24,7 @@ import java.time.LocalDate
 class MealService(
     private val mealRepository: MealRepository,
 ) : CreateMealUseCase, GetMealIdeasUseCase, GetMealsForDateUseCase, GetMealsForWeekUseCase,
-    AssignMealUseCase, UnassignMealUseCase, DeleteMealUseCase {
+    AssignMealUseCase, UnassignMealUseCase, DeleteMealUseCase, RenameMealUseCase {
 
     override fun create(command: CreateMealCommand): Meal =
         mealRepository.save(Meal.createIdea(command.householdId, command.title))
@@ -51,4 +52,9 @@ class MealService(
     }
 
     override fun delete(id: MealId) = mealRepository.delete(id)
+
+    override fun rename(id: MealId, title: String): Meal {
+        val meal = mealRepository.findById(id) ?: throw MealNotFoundException(id)
+        return mealRepository.save(meal.rename(title))
+    }
 }

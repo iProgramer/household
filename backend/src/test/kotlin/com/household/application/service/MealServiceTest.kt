@@ -109,6 +109,26 @@ class MealServiceTest {
     }
 
     @Test
+    fun `rename updates meal title`() {
+        val meal = Meal.createIdea(HOUSEHOLD_ID, "Pasta")
+        every { mealRepository.findById(meal.id) } returns meal
+        every { mealRepository.save(any()) } answers { firstArg() }
+
+        val result = service.rename(meal.id, "Pasta Bolognese")
+
+        assertEquals("Pasta Bolognese", result.title)
+        verify { mealRepository.save(match { it.title == "Pasta Bolognese" }) }
+    }
+
+    @Test
+    fun `rename throws MealNotFoundException when meal does not exist`() {
+        val unknownId = MealId(UUID.randomUUID())
+        every { mealRepository.findById(unknownId) } returns null
+
+        assertThrows<MealNotFoundException> { service.rename(unknownId, "New title") }
+    }
+
+    @Test
     fun `getForWeek delegates with correct date range`() {
         val start = LocalDate.of(2026, 5, 18)
         every { mealRepository.findPlannedByHouseholdIdBetween(HOUSEHOLD_ID, start, start.plusDays(6)) } returns emptyList()

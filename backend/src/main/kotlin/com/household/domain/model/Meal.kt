@@ -31,4 +31,8 @@ data class Meal(
 
     fun assign(date: LocalDate): Meal = copy(date = date, status = MealStatus.PLANNED)
     fun unassign(): Meal = copy(date = null, status = MealStatus.IDEA)
+    fun rename(newTitle: String): Meal {
+        require(newTitle.isNotBlank()) { "Title must not be blank" }
+        return copy(title = newTitle.trim())
+    }
 }
