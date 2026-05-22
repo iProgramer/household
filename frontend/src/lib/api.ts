@@ -136,6 +136,7 @@ export const tasks = {
   reopen:   (id: string) => request<Task>(`/tasks/${id}/reopen`,   { method: 'POST' }),
   update: (id: string, data: { date?: string | null; assignedTo?: string | null; title?: string }) =>
     request<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => request<void>(`/tasks/${id}`, { method: 'DELETE' }),
 };
 
 // ── Fixed Events ──────────────────────────────────────────────

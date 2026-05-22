@@ -52,6 +52,11 @@
     allTasks = allTasks.map((t) => (t.id === id ? updated : t));
   }
 
+  async function deleteTask(id: string) {
+    await tasksApi.delete(id);
+    allTasks = allTasks.filter((t) => t.id !== id);
+  }
+
   function sortTasks(tasks: Task[]) {
     return [...tasks].sort((a, b) => {
       if (a.date && b.date) return a.date.localeCompare(b.date);
@@ -93,7 +98,7 @@
     <div class="tasks-list">
       {#each filtered as task (task.id)}
         <div class="task-meta-row">
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
           {#if task.date}
             <span class="date-badge muted">{formatShortDate(task.date)}</span>
           {/if}

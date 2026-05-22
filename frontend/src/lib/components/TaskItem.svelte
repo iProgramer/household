@@ -15,6 +15,7 @@
     onreopen?: () => void | Promise<void>;
     onunschedule?: () => void | Promise<void>;
     onedit?: (newTitle: string) => Promise<void>;
+    ondelete?: () => Promise<void>;
   } = $props();
 
   const accent = $derived(taskAccent(task.id));
@@ -117,6 +118,16 @@
     </button>
   {/if}
 
+  {#if ondelete}
+    <button class="delete-btn" onclick={ondelete} title="Löschen" aria-label="Aufgabe löschen">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="2 4 14 4"/>
+        <path d="M5 4V2h6v2"/>
+        <path d="M3 4l1 10h8l1-10"/>
+      </svg>
+    </button>
+  {/if}
+
   {#if onunschedule && task.date}
     <button class="unschedule-btn" onclick={onunschedule} title="Zurückstellen" aria-label="Zurückstellen">↩</button>
   {/if}
@@ -204,6 +215,18 @@
 
   .edit-btn:hover {
     color: var(--color-text);
+  }
+
+  .delete-btn {
+    color: var(--color-muted);
+    padding: 0.125rem 0.25rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .delete-btn:hover {
+    color: var(--accent-rose);
   }
 
   .unschedule-btn {

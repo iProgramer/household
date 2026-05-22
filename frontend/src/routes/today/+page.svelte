@@ -79,6 +79,12 @@
     overdueTasks = overdueTasks.map((t) => (t.id === id ? updated : t));
   }
 
+  async function deleteTask(id: string) {
+    await tasksApi.delete(id);
+    todayTasks = todayTasks.filter((t) => t.id !== id);
+    overdueTasks = overdueTasks.filter((t) => t.id !== id);
+  }
+
   async function completeOverdue(id: string) {
     await tasksApi.complete(id);
     overdueTasks = overdueTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
@@ -121,7 +127,7 @@
         {#each overdueTasks.filter(t => t.status === 'OPEN') as task (task.id)}
           <div class="task-row">
             <div class="task-wrap">
-              <TaskItem {task} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+              <TaskItem {task} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
             </div>
           </div>
         {/each}
@@ -165,7 +171,7 @@
       {#each openTasks as task (task.id)}
         <div class="task-row">
           <div class="task-wrap">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
           </div>
           {#if task.assignedTo}
             <PersonAvatar memberId={task.assignedTo} {currentMemberId} email={currentEmail} size={24} />

@@ -97,6 +97,22 @@
     }
   }
 
+  async function deleteTask(taskId: string, projectId: string) {
+    await tasksApi.delete(taskId);
+    if (detailCache[projectId]) {
+      detailCache = {
+        ...detailCache,
+        [projectId]: {
+          ...detailCache[projectId],
+          tasks: detailCache[projectId].tasks.filter((t) => t.id !== taskId),
+        },
+      };
+    }
+    projectList = projectList.map((p) =>
+      p.id !== projectId ? p : { ...p, totalSteps: Math.max(0, p.totalSteps - 1) }
+    );
+  }
+
   function onTaskCreated(task: ReturnType<typeof Object.assign>, projectId: string) {
     if (detailCache[projectId]) {
       detailCache = {
@@ -195,7 +211,7 @@
           {@const detail = detailCache[project.id]}
           <div class="project-tasks">
             {#each detail.tasks as task (task.id)}
-              <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} onreopen={() => reopenTask(task.id, project.id)} onedit={(title) => editTask(task.id, project.id, title)} />
+              <TaskItem {task} oncomplete={() => completeTask(task.id, project.id)} onreopen={() => reopenTask(task.id, project.id)} onedit={(title) => editTask(task.id, project.id, title)} ondelete={() => deleteTask(task.id, project.id)} />
             {/each}
 
             <AddTaskForm

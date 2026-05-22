@@ -12,6 +12,7 @@ import com.household.domain.port.`in`.GetTodayTasksUseCase
 import com.household.domain.port.`in`.GetOverdueTasksUseCase
 import com.household.domain.port.`in`.GetUnplannedTasksUseCase
 import com.household.domain.port.`in`.GetWeekTasksUseCase
+import com.household.domain.port.`in`.DeleteTaskUseCase
 import com.household.domain.port.`in`.UpdateTaskCommand
 import com.household.domain.port.`in`.UpdateTaskUseCase
 import com.household.domain.port.out.TaskRepository
@@ -24,7 +25,7 @@ import java.time.LocalDate
 class TaskService(
     private val taskRepository: TaskRepository,
 ) : CreateTaskUseCase, GetTodayTasksUseCase, GetWeekTasksUseCase, GetUnplannedTasksUseCase,
-    GetOverdueTasksUseCase, CompleteTaskUseCase, ReopenTaskUseCase, UpdateTaskUseCase {
+    GetOverdueTasksUseCase, CompleteTaskUseCase, ReopenTaskUseCase, UpdateTaskUseCase, DeleteTaskUseCase {
 
     override fun create(command: CreateTaskCommand): Task =
         taskRepository.save(Task.create(command.householdId, command.title, command.date, command.assignedTo, command.recurrenceRule, command.projectId))
@@ -56,6 +57,8 @@ class TaskService(
         val task = taskRepository.findById(taskId) ?: throw TaskNotFoundException(taskId)
         return taskRepository.save(task.reopen())
     }
+
+    override fun delete(id: TaskId) = taskRepository.delete(id)
 
     override fun update(command: UpdateTaskCommand): Task {
         val task = taskRepository.findById(command.taskId) ?: throw TaskNotFoundException(command.taskId)

@@ -123,6 +123,12 @@
     unplannedTasks = unplannedTasks.map((t) => (t.id === id ? updated : t));
   }
 
+  async function deleteTask(id: string) {
+    await tasksApi.delete(id);
+    weekTasks = weekTasks.filter((t) => t.id !== id);
+    unplannedTasks = unplannedTasks.filter((t) => t.id !== id);
+  }
+
   let selectedDayIso   = $derived(isoDate(days[selectedDayIdx]));
   let selectedTasks    = $derived(tasksForDay(selectedDayIso));
   let selectedEvents   = $derived(eventsForDay(selectedDayIso));
@@ -221,7 +227,7 @@
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
         {/each}
         <AddTaskForm
           defaultDate={selectedDayIso}
@@ -235,7 +241,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
             <button class="schedule-btn" title="Auf ausgewählten Tag einplanen"
               onclick={() => scheduleTask(task.id, selectedDayIso)}>→</button>
           </div>
@@ -296,7 +302,7 @@
         {/if}
 
         {#each dayTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
         {/each}
 
         <AddTaskForm
@@ -312,7 +318,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} />
+            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
           </div>
         {/each}
       </section>

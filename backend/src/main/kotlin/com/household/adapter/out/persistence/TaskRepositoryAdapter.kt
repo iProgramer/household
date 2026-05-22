@@ -43,6 +43,8 @@ class TaskRepositoryAdapter(
     override fun findAllByProjectId(projectId: ProjectId): List<Task> =
         jpa.findAllByProjectId(projectId.value).map { it.toDomain() }
 
+    override fun delete(id: TaskId) = jpa.deleteById(id.value)
+
     private fun Task.toJpaEntity() = TaskJpaEntity(
         id = id.value,
         householdId = householdId.value,

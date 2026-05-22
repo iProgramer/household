@@ -9,6 +9,7 @@ import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskNotFoundException
 import com.household.domain.port.`in`.CompleteTaskUseCase
+import com.household.domain.port.`in`.DeleteTaskUseCase
 import com.household.domain.port.`in`.CreateTaskUseCase
 import com.household.domain.port.`in`.GetOverdueTasksUseCase
 import com.household.domain.port.`in`.GetTodayTasksUseCase
@@ -25,6 +26,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
@@ -64,6 +66,9 @@ class TaskControllerTest {
 
     @MockkBean
     lateinit var updateTask: UpdateTaskUseCase
+
+    @MockkBean
+    lateinit var deleteTask: DeleteTaskUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -257,6 +262,17 @@ class TaskControllerTest {
         }.andExpect {
             status { isOk() }
             jsonPath("$.title") { value("Neu") }
+        }
+    }
+
+    @Test
+    fun `DELETE removes task and returns 204`() {
+        every { deleteTask.delete(any()) } returns Unit
+
+        mockMvc.delete("/api/tasks/${UUID.randomUUID()}") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isNoContent() }
         }
     }
 

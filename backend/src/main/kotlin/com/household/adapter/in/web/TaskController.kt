@@ -8,6 +8,7 @@ import com.household.domain.model.Task
 import com.household.domain.model.TaskId
 import com.household.domain.model.TaskStatus
 import com.household.domain.port.`in`.CompleteTaskUseCase
+import com.household.domain.port.`in`.DeleteTaskUseCase
 import com.household.domain.port.`in`.ReopenTaskUseCase
 import com.household.domain.port.`in`.CreateTaskCommand
 import com.household.domain.port.`in`.CreateTaskUseCase
@@ -22,6 +23,7 @@ import jakarta.validation.constraints.NotBlank
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -46,6 +48,7 @@ class TaskController(
     private val completeTask: CompleteTaskUseCase,
     private val reopenTask: ReopenTaskUseCase,
     private val updateTask: UpdateTaskUseCase,
+    private val deleteTask: DeleteTaskUseCase,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -91,6 +94,10 @@ class TaskController(
     @PostMapping("/{id}/reopen")
     fun reopen(@PathVariable id: UUID): TaskResponse =
         TaskResponse.from(reopenTask.reopen(TaskId(id)))
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun delete(@PathVariable id: UUID) = deleteTask.delete(TaskId(id))
 
     @PatchMapping("/{id}")
     fun update(
