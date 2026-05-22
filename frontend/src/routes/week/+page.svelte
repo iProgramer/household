@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tasks as tasksApi, fixedEvents as eventsApi, meals as mealsApi, ApiError } from '$lib/api';
+  import { tasks as tasksApi, fixedEvents as eventsApi, meals as mealsApi, projects as projectsApi, ApiError } from '$lib/api';
   import type { Task, FixedEvent, Meal } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import TaskItem from '$lib/components/TaskItem.svelte';
@@ -26,6 +26,7 @@
   let weekPlannedMeals  = $state<Meal[]>([]);
   let mealIdeas         = $state<Meal[]>([]);
   let unplannedTasks    = $state<Task[]>([]);
+  let projectsMap       = $state<Map<string, string>>(new Map());
   let loading   = $state(true);
   let loadError = $state('');
 
@@ -56,18 +57,20 @@
     showEventForm = false;
     overviewEventForms = {};
     try {
-      const [wt, we, wm, ideas, ut] = await Promise.all([
+      const [wt, we, wm, ideas, ut, projs] = await Promise.all([
         tasksApi.week(mondayIso),
         eventsApi.week(mondayIso),
         mealsApi.forWeek(mondayIso),
         mealsApi.ideas(),
         tasksApi.unplanned(),
+        projectsApi.list(),
       ]);
       weekTasks        = wt;
       weekEvents       = we;
       weekPlannedMeals = wm;
       mealIdeas        = ideas;
       unplannedTasks   = ut;
+      projectsMap      = new Map(projs.map((p) => [p.id, p.title]));
     } catch (e) {
       loadError = e instanceof ApiError ? e.message : 'Fehler beim Laden';
     } finally {
@@ -227,7 +230,7 @@
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
         {/each}
         <AddTaskForm
           defaultDate={selectedDayIso}
@@ -241,7 +244,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
             <button class="schedule-btn" title="Auf ausgewählten Tag einplanen"
               onclick={() => scheduleTask(task.id, selectedDayIso)}>→</button>
           </div>
@@ -302,7 +305,7 @@
         {/if}
 
         {#each dayTasks as task (task.id)}
-          <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
         {/each}
 
         <AddTaskForm
@@ -318,7 +321,7 @@
         <p class="section-label">Nicht eingeplant</p>
         {#each unplannedTasks as task (task.id)}
           <div class="unplanned-row">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
           </div>
         {/each}
       </section>

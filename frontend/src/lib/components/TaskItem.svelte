@@ -5,12 +5,15 @@
 
   let {
     task,
+    projectTitle,
     oncomplete,
     onreopen,
     onunschedule,
     onedit,
+    ondelete,
   }: {
     task: Task;
+    projectTitle?: string;
     oncomplete?: () => void | Promise<void>;
     onreopen?: () => void | Promise<void>;
     onunschedule?: () => void | Promise<void>;
@@ -94,6 +97,10 @@
     />
   {:else}
     <span class="title" class:strikethrough={task.status === 'DONE'}>{task.title}</span>
+  {/if}
+
+  {#if projectTitle}
+    <span class="project-badge" title={projectTitle}>{projectTitle}</span>
   {/if}
 
   {#if task.recurrence}
@@ -187,6 +194,19 @@
   .strikethrough {
     text-decoration: line-through;
     color: var(--color-muted);
+  }
+
+  .project-badge {
+    font-size: 0.6875rem;
+    color: var(--color-muted);
+    border: var(--border-width) solid var(--color-divider);
+    border-radius: var(--border-radius-pill);
+    padding: 0.1rem 0.45rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 8rem;
+    flex-shrink: 0;
   }
 
   .badge {

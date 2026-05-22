@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fixedEvents as eventsApi, meals as mealsApi, ApiError } from '$lib/api';
+  import { fixedEvents as eventsApi, meals as mealsApi, projects as projectsApi, ApiError } from '$lib/api';
   import type { Task, FixedEvent, Meal } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { tasks as tasksApi } from '$lib/api';
@@ -16,6 +16,7 @@
   let todayEvents = $state<FixedEvent[]>([]);
   let todayMeals = $state<Meal[]>([]);
   let mealIdeas = $state<Meal[]>([]);
+  let projectsMap = $state<Map<string, string>>(new Map());
   let loading = $state(true);
   let loadError = $state('');
   let showEventForm = $state(false);
@@ -36,18 +37,20 @@
     loading = true;
     loadError = '';
     try {
-      const [t, o, e, m, ideas] = await Promise.all([
+      const [t, o, e, m, ideas, projs] = await Promise.all([
         tasksApi.today(),
         tasksApi.overdue(),
         eventsApi.today(),
         mealsApi.forDate(todayIso),
         mealsApi.ideas(),
+        projectsApi.list(),
       ]);
       todayTasks = t;
       overdueTasks = o;
       todayEvents = e;
       todayMeals = m;
       mealIdeas = ideas;
+      projectsMap = new Map(projs.map((p) => [p.id, p.title]));
     } catch (e) {
       loadError = e instanceof ApiError ? e.message : 'Fehler beim Laden';
     } finally {
@@ -127,7 +130,7 @@
         {#each overdueTasks.filter(t => t.status === 'OPEN') as task (task.id)}
           <div class="task-row">
             <div class="task-wrap">
-              <TaskItem {task} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+              <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
             </div>
           </div>
         {/each}
@@ -171,7 +174,7 @@
       {#each openTasks as task (task.id)}
         <div class="task-row">
           <div class="task-wrap">
-            <TaskItem {task} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
+            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title) => editTask(task.id, title)} ondelete={() => deleteTask(task.id)} />
           </div>
           {#if task.assignedTo}
             <PersonAvatar memberId={task.assignedTo} {currentMemberId} email={currentEmail} size={24} />
