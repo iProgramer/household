@@ -160,6 +160,19 @@ class TaskServiceTest {
     }
 
     @Test
+    fun `update renames task title`() {
+        val task = Task.create(HOUSEHOLD_ID, "Alt", null)
+        val command = UpdateTaskCommand(task.id, null, null, title = "Neu")
+        every { taskRepository.findById(task.id) } returns task
+        every { taskRepository.save(any()) } answers { firstArg() }
+
+        val result = service.update(command)
+
+        assertEquals("Neu", result.title)
+        verify { taskRepository.save(match { it.title == "Neu" }) }
+    }
+
+    @Test
     fun `update throws TaskNotFoundException when task does not exist`() {
         val unknownId = TaskId(UUID.randomUUID())
         every { taskRepository.findById(unknownId) } returns null

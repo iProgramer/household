@@ -245,6 +245,22 @@ class TaskControllerTest {
     }
 
     @Test
+    fun `PATCH with title renames task`() {
+        val task = Task.create(HOUSEHOLD_ID, "Alt", null)
+        val renamed = task.rename("Neu")
+        every { updateTask.update(any()) } returns renamed
+
+        mockMvc.patch("/api/tasks/${task.id.value}") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"date": null, "title": "Neu"}"""
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.title") { value("Neu") }
+        }
+    }
+
+    @Test
     fun `PATCH returns 404 when task not found`() {
         val unknownId = TaskId(UUID.randomUUID())
         every { updateTask.update(any()) } throws TaskNotFoundException(unknownId)
