@@ -121,6 +121,16 @@ export const auth = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  resetPassword: (email: string, inviteCode: string, newPassword: string) =>
+    request<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email, inviteCode, newPassword }),
+    }),
 };
 
 // ── Tasks ─────────────────────────────────────────────────────

@@ -10,6 +10,8 @@ data class Member(
     val email: String,
     val passwordHash: String,
 ) {
+    fun withPasswordHash(hash: String): Member = copy(passwordHash = hash)
+
     companion object {
         fun create(householdId: HouseholdId, email: String, passwordHash: String): Member =
             Member(

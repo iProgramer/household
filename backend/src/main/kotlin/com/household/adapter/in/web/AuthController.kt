@@ -1,14 +1,18 @@
 package com.household.adapter.`in`.web
 
+import com.household.adapter.`in`.web.security.AuthenticatedMember
 import com.household.domain.model.Member
+import com.household.domain.port.`in`.ChangePasswordUseCase
 import com.household.domain.port.`in`.JoinHouseholdUseCase
 import com.household.domain.port.`in`.LoginUseCase
 import com.household.domain.port.`in`.RegisterUseCase
+import com.household.domain.port.`in`.ResetPasswordUseCase
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -22,6 +26,8 @@ class AuthController(
     private val register: RegisterUseCase,
     private val join: JoinHouseholdUseCase,
     private val login: LoginUseCase,
+    private val changePassword: ChangePasswordUseCase,
+    private val resetPassword: ResetPasswordUseCase,
 ) {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -36,6 +42,18 @@ class AuthController(
         val result = join.join(request.email, request.password, request.inviteCode)
         return AuthResponse.from(result.member, result.token, inviteCode = null)
     }
+
+    @PostMapping("/change-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun changePassword(
+        @RequestBody @Valid request: ChangePasswordRequest,
+        @AuthenticationPrincipal principal: AuthenticatedMember,
+    ) = changePassword.changePassword(principal.memberId, request.currentPassword, request.newPassword)
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun resetPassword(@RequestBody @Valid request: ResetPasswordRequest) =
+        resetPassword.resetPassword(request.email, request.inviteCode, request.newPassword)
 
     @PostMapping("/login")
     fun login(@RequestBody @Valid request: LoginRequest): AuthResponse {
@@ -53,6 +71,17 @@ data class JoinRequest(
     @field:Email @field:NotBlank val email: String,
     @field:NotBlank @field:Size(min = 8) val password: String,
     @field:NotBlank val inviteCode: String,
+)
+
+data class ChangePasswordRequest(
+    @field:NotBlank val currentPassword: String,
+    @field:NotBlank @field:Size(min = 8) val newPassword: String,
+)
+
+data class ResetPasswordRequest(
+    @field:Email @field:NotBlank val email: String,
+    @field:NotBlank val inviteCode: String,
+    @field:NotBlank @field:Size(min = 8) val newPassword: String,
 )
 
 data class LoginRequest(

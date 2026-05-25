@@ -30,7 +30,12 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .exceptionHandling { it.authenticationEntryPoint(HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)) }
             .authorizeHttpRequests {
-                it.requestMatchers("/api/auth/**").permitAll()
+                it.requestMatchers(
+                    "/api/auth/register",
+                    "/api/auth/join",
+                    "/api/auth/login",
+                    "/api/auth/reset-password",
+                ).permitAll()
                 it.requestMatchers("/actuator/health").permitAll()
                 it.anyRequest().authenticated()
             }

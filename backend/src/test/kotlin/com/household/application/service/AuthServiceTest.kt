@@ -134,4 +134,53 @@ class AuthServiceTest {
             service.login("alice@example.com", "wrong-password")
         }
     }
+
+    @Test
+    fun `changePassword updates hash when current password is correct`() {
+        val hash = passwordEncoder.encode("oldpass1")
+        val member = Member(MemberId(UUID.randomUUID()), HouseholdId(UUID.randomUUID()), "alice@example.com", hash)
+        every { memberRepository.findById(member.id) } returns member
+        every { memberRepository.save(any()) } answers { firstArg() }
+
+        service.changePassword(member.id, "oldpass1", "newpass123")
+
+        verify { memberRepository.save(match { passwordEncoder.matches("newpass123", it.passwordHash) }) }
+    }
+
+    @Test
+    fun `changePassword throws when current password is wrong`() {
+        val hash = passwordEncoder.encode("correctpass")
+        val member = Member(MemberId(UUID.randomUUID()), HouseholdId(UUID.randomUUID()), "alice@example.com", hash)
+        every { memberRepository.findById(member.id) } returns member
+
+        assertThrows<IllegalArgumentException> {
+            service.changePassword(member.id, "wrongpass", "newpass123")
+        }
+    }
+
+    @Test
+    fun `resetPassword updates hash when email and invite code are valid`() {
+        val household = Household.create()
+        val hash = passwordEncoder.encode("oldpass1")
+        val member = Member(MemberId(UUID.randomUUID()), household.id, "alice@example.com", hash)
+        every { memberRepository.findByEmail("alice@example.com") } returns member
+        every { householdRepository.findById(household.id) } returns household
+        every { memberRepository.save(any()) } answers { firstArg() }
+
+        service.resetPassword("alice@example.com", household.inviteCode, "newpass123")
+
+        verify { memberRepository.save(match { passwordEncoder.matches("newpass123", it.passwordHash) }) }
+    }
+
+    @Test
+    fun `resetPassword throws when invite code is wrong`() {
+        val household = Household.create()
+        val member = Member(MemberId(UUID.randomUUID()), household.id, "alice@example.com", "hash")
+        every { memberRepository.findByEmail("alice@example.com") } returns member
+        every { householdRepository.findById(household.id) } returns household
+
+        assertThrows<IllegalArgumentException> {
+            service.resetPassword("alice@example.com", "WRONG123", "newpass123")
+        }
+    }
 }

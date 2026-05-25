@@ -14,7 +14,7 @@
 
   let { children } = $props();
 
-  const PUBLIC_ROUTES = ['/login', '/register'];
+  const PUBLIC_ROUTES = ['/login', '/register', '/reset-password'];
 
   $effect(() => {
     if (browser && !$isAuthenticated && !PUBLIC_ROUTES.some((r) => $page.url.pathname.startsWith(r))) {
@@ -173,6 +173,15 @@
                 <line x1="5" y1="9" x2="11" y2="12"/>
               </svg>
               Einladen
+            </button>
+          </li>
+          <li>
+            <button class="account-menu-item" onclick={() => { menuOpen = false; goto('/change-password'); }}>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="7" width="10" height="8" rx="1"/>
+                <path d="M5 7V5a3 3 0 0 1 6 0v2"/>
+              </svg>
+              Passwort ändern
             </button>
           </li>
           <li>

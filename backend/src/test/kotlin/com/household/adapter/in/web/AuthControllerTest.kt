@@ -7,12 +7,15 @@ import com.household.domain.model.InvalidCredentialsException
 import com.household.domain.model.InvalidInviteCodeException
 import com.household.domain.model.Member
 import com.household.domain.model.MemberId
+import com.household.adapter.`in`.web.security.AuthenticatedMember
+import com.household.domain.port.`in`.ChangePasswordUseCase
 import com.household.domain.port.`in`.JoinHouseholdUseCase
 import com.household.domain.port.`in`.JoinResult
 import com.household.domain.port.`in`.LoginResult
 import com.household.domain.port.`in`.LoginUseCase
 import com.household.domain.port.`in`.RegisterResult
 import com.household.domain.port.`in`.RegisterUseCase
+import com.household.domain.port.`in`.ResetPasswordUseCase
 import com.household.adapter.`in`.web.security.JwtService
 import com.household.adapter.`in`.web.security.SecurityConfig
 import com.ninjasquad.springmockk.MockkBean
@@ -46,9 +49,16 @@ class AuthControllerTest {
     @MockkBean
     lateinit var loginUseCase: LoginUseCase
 
+    @MockkBean
+    lateinit var changePasswordUseCase: ChangePasswordUseCase
+
+    @MockkBean
+    lateinit var resetPasswordUseCase: ResetPasswordUseCase
+
     @BeforeEach
     fun setupAuth() {
         every { jwtService.extractPrincipal(any()) } returns null
+        every { jwtService.extractPrincipal("valid-token") } returns AuthenticatedMember(memberId, householdId)
     }
 
     private val householdId = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
@@ -155,6 +165,68 @@ class AuthControllerTest {
             content = """{"email": "alice@example.com", "password": "wrong"}"""
         }.andExpect {
             status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    fun `POST change-password returns 204`() {
+        every { changePasswordUseCase.changePassword(memberId, "oldpass1", "newpass123") } returns Unit
+
+        mockMvc.post("/api/auth/change-password") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"currentPassword": "oldpass1", "newPassword": "newpass123"}"""
+        }.andExpect {
+            status { isNoContent() }
+        }
+    }
+
+    @Test
+    fun `POST change-password without token returns 401`() {
+        mockMvc.post("/api/auth/change-password") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"currentPassword": "oldpass1", "newPassword": "newpass123"}"""
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+    }
+
+    @Test
+    fun `POST change-password with wrong current password returns 400`() {
+        every { changePasswordUseCase.changePassword(memberId, "wrong", any()) } throws
+            IllegalArgumentException("Aktuelles Passwort ist falsch")
+
+        mockMvc.post("/api/auth/change-password") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"currentPassword": "wrong", "newPassword": "newpass123"}"""
+        }.andExpect {
+            status { isBadRequest() }
+        }
+    }
+
+    @Test
+    fun `POST reset-password returns 204`() {
+        every { resetPasswordUseCase.resetPassword("alice@example.com", "ABCD1234", "newpass123") } returns Unit
+
+        mockMvc.post("/api/auth/reset-password") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"email": "alice@example.com", "inviteCode": "ABCD1234", "newPassword": "newpass123"}"""
+        }.andExpect {
+            status { isNoContent() }
+        }
+    }
+
+    @Test
+    fun `POST reset-password with wrong invite code returns 400`() {
+        every { resetPasswordUseCase.resetPassword(any(), "WRONG", any()) } throws
+            IllegalArgumentException("E-Mail oder Einladungscode ungültig")
+
+        mockMvc.post("/api/auth/reset-password") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"email": "alice@example.com", "inviteCode": "WRONG", "newPassword": "newpass123"}"""
+        }.andExpect {
+            status { isBadRequest() }
         }
     }
 }

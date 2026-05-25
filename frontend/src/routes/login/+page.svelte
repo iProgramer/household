@@ -46,6 +46,9 @@
     <p class="muted center-text">
       Noch kein Konto? <a href="/register">Registrieren</a>
     </p>
+    <p class="muted center-text">
+      <a href="/reset-password">Passwort zurücksetzen</a>
+    </p>
   </div>
 </div>
 
