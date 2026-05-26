@@ -9,7 +9,8 @@ import com.household.domain.port.`in`.CreateFixedEventUseCase
 import com.household.domain.port.`in`.DeleteFixedEventUseCase
 import com.household.domain.port.`in`.GetFixedEventsForDateUseCase
 import com.household.domain.port.`in`.GetFixedEventsForWeekUseCase
-import com.household.domain.port.`in`.RenameFixedEventUseCase
+import com.household.domain.port.`in`.UpdateFixedEventCommand
+import com.household.domain.port.`in`.UpdateFixedEventUseCase
 import com.household.domain.port.out.FixedEventRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +21,7 @@ import java.time.LocalDate
 class FixedEventService(
     private val fixedEventRepository: FixedEventRepository,
 ) : CreateFixedEventUseCase, GetFixedEventsForDateUseCase, GetFixedEventsForWeekUseCase,
-    DeleteFixedEventUseCase, RenameFixedEventUseCase {
+    DeleteFixedEventUseCase, UpdateFixedEventUseCase {
 
     override fun create(command: CreateFixedEventCommand): FixedEvent =
         fixedEventRepository.save(
@@ -33,16 +34,14 @@ class FixedEventService(
 
     override fun delete(id: FixedEventId) = fixedEventRepository.delete(id)
 
-    override fun rename(id: FixedEventId, title: String): FixedEvent {
-        val event = fixedEventRepository.findById(id) ?: throw FixedEventNotFoundException(id)
-        return fixedEventRepository.save(event.rename(title))
+    override fun update(command: UpdateFixedEventCommand): FixedEvent {
+        val event = fixedEventRepository.findById(command.id) ?: throw FixedEventNotFoundException(command.id)
+        return fixedEventRepository.save(event.update(command.title, command.date, command.recurrenceRule))
     }
 
     @Transactional(readOnly = true)
     override fun getForWeek(householdId: HouseholdId, startDate: LocalDate): List<FixedEvent> {
         val days = (0L..6L).map { startDate.plusDays(it) }
-        // Expand each event to its concrete occurrence date(s) within the week so the
-        // frontend can bucket by date without knowing any recurrence logic.
         return fixedEventRepository.findAllByHouseholdId(householdId)
             .flatMap { event -> days.filter { event.occursOn(it) }.map { day -> event.copy(date = day) } }
     }

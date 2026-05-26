@@ -67,43 +67,6 @@ class FixedEventScenarioTest {
         assertTrue("Gelber Sack" in nextWeekTitles)
     }
 
-    @Test
-    fun `non-recurring fixed event does not appear in other weeks`() {
-        val token = registerAndGetToken("onetime-${System.nanoTime()}@example.com")
-        val today = LocalDate.now()
-
-        restTemplate.postForEntity(
-            "/api/fixed-events",
-            HttpEntity(
-                mapOf("title" to "Handwerker", "date" to today.toString()),
-                authHeaders(token),
-            ),
-            Map::class.java,
-        )
-
-        // Today → appears
-        val todayResponse = restTemplate.exchange(
-            "/api/fixed-events/today",
-            HttpMethod.GET,
-            HttpEntity<Void>(authHeaders(token)),
-            List::class.java,
-        )
-        @Suppress("UNCHECKED_CAST")
-        assertTrue("Handwerker" in (todayResponse.body!! as List<Map<*, *>>).map { it["title"] })
-
-        // Next week → does not appear
-        val nextWeekMonday = today.plusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val nextWeekResponse = restTemplate.exchange(
-            "/api/fixed-events/week?startDate=$nextWeekMonday",
-            HttpMethod.GET,
-            HttpEntity<Void>(authHeaders(token)),
-            List::class.java,
-        )
-        @Suppress("UNCHECKED_CAST")
-        val nextWeekTitles = (nextWeekResponse.body!! as List<Map<*, *>>).map { it["title"] }
-        assertTrue("Handwerker" !in nextWeekTitles)
-    }
-
     private fun registerAndGetToken(email: String): String {
         val response = restTemplate.postForEntity(
             "/api/auth/register",

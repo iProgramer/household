@@ -25,7 +25,7 @@
   let title = $state('');
   let date = $state('');
   $effect.pre(() => { date = defaultDate; });
-  let recurrenceType = $state('NONE');
+  let recurrenceType = $state('WEEKLY');
   let weekday = $state('MONDAY');
   let saving = $state(false);
   let error = $state('');
@@ -36,9 +36,7 @@
     error = '';
     try {
       const recurrence =
-        recurrenceType === 'NONE'
-          ? undefined
-          : recurrenceType === 'ON_WEEKDAY'
+        recurrenceType === 'ON_WEEKDAY'
           ? { type: 'ON_WEEKDAY' as const, weekday }
           : { type: recurrenceType as 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' };
 
@@ -72,7 +70,6 @@
 
     <div class="row">
       <select bind:value={recurrenceType} class="select">
-        <option value="NONE">Einmalig</option>
         <option value="WEEKLY">Wöchentlich</option>
         <option value="BIWEEKLY">Zweiwöchentlich</option>
         <option value="MONTHLY">Monatlich</option>

@@ -89,8 +89,8 @@
   function eventsForDay(dayIso: string) { return weekEvents.filter((e) => e.date === dayIso); }
   function mealsForDay(dayIso: string)  { return weekPlannedMeals.filter((m) => m.date === dayIso); }
 
-  async function renameEvent(id: string, title: string) {
-    const updated = await eventsApi.rename(id, title);
+  async function editEvent(id: string, data: { title: string; date: string; recurrence: import('$lib/api').Recurrence }) {
+    const updated = await eventsApi.update(id, data);
     weekEvents = weekEvents.map((e) => (e.id === id ? updated : e));
   }
 
@@ -217,7 +217,7 @@
           {#each selectedEvents as event (event.id)}
             <FixedEventItem
               {event}
-              onrename={(title) => renameEvent(event.id, title)}
+              onedit={(data) => editEvent(event.id, data)}
               ondelete={() => deleteEvent(event.id)}
             />
           {/each}
@@ -305,7 +305,7 @@
             {#each dayEvents as event (event.id)}
               <FixedEventItem
                 {event}
-                onrename={(title) => renameEvent(event.id, title)}
+                onedit={(data) => editEvent(event.id, data)}
                 ondelete={() => deleteEvent(event.id)}
               />
             {/each}

@@ -16,7 +16,7 @@ class FixedEventTest {
 
     @Test
     fun `create with valid data`() {
-        val event = FixedEvent.create(householdId, "Müllabfuhr", monday)
+        val event = FixedEvent.create(householdId, "Müllabfuhr", monday, RecurrenceRule.Weekly)
 
         assertEquals("Müllabfuhr", event.title)
         assertEquals(monday, event.date)
@@ -25,28 +25,31 @@ class FixedEventTest {
 
     @Test
     fun `create trims whitespace from title`() {
-        val event = FixedEvent.create(householdId, "  Müllabfuhr  ", monday)
+        val event = FixedEvent.create(householdId, "  Müllabfuhr  ", monday, RecurrenceRule.Weekly)
         assertEquals("Müllabfuhr", event.title)
     }
 
     @Test
     fun `create with blank title throws`() {
         assertThrows<IllegalArgumentException> {
-            FixedEvent.create(householdId, "   ", monday)
+            FixedEvent.create(householdId, "   ", monday, RecurrenceRule.Weekly)
         }
     }
 
-    // occursOn – non-recurring
+    // occursOn – non-recurring (legacy DB records without recurrence)
+
+    private fun eventWithoutRecurrence(title: String, date: LocalDate) =
+        FixedEvent(FixedEventId(UUID.randomUUID()), householdId, title, date, recurrenceRule = null)
 
     @Test
     fun `non-recurring event occurs on its own date`() {
-        val event = FixedEvent.create(householdId, "Handwerker", monday)
+        val event = eventWithoutRecurrence("Handwerker", monday)
         assertTrue(event.occursOn(monday))
     }
 
     @Test
     fun `non-recurring event does not occur on other dates`() {
-        val event = FixedEvent.create(householdId, "Handwerker", monday)
+        val event = eventWithoutRecurrence("Handwerker", monday)
         assertFalse(event.occursOn(monday.plusDays(1)))
         assertFalse(event.occursOn(monday.minusDays(1)))
     }

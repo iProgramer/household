@@ -1,6 +1,7 @@
 package com.household.adapter.out.persistence
 
 import com.household.domain.model.FixedEvent
+import com.household.domain.model.FixedEventId
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.RecurrenceRule
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,7 +29,7 @@ class FixedEventRepositoryAdapterTest {
 
     @Test
     fun `save and retrieve by household`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.of(2026, 5, 4))
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.of(2026, 5, 4), RecurrenceRule.Weekly)
 
         adapter.save(event)
         val found = adapter.findAllByHouseholdId(HOUSEHOLD_ID)
@@ -40,8 +41,8 @@ class FixedEventRepositoryAdapterTest {
     @Test
     fun `findAllByHouseholdId excludes other households`() {
         val other = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000002"))
-        adapter.save(FixedEvent.create(HOUSEHOLD_ID, "Unser Termin", LocalDate.now()))
-        adapter.save(FixedEvent.create(other, "Anderer Termin", LocalDate.now()))
+        adapter.save(FixedEvent.create(HOUSEHOLD_ID, "Unser Termin", LocalDate.now(), RecurrenceRule.Weekly))
+        adapter.save(FixedEvent.create(other, "Anderer Termin", LocalDate.now(), RecurrenceRule.Weekly))
 
         val result = adapter.findAllByHouseholdId(HOUSEHOLD_ID)
 
@@ -50,8 +51,9 @@ class FixedEventRepositoryAdapterTest {
     }
 
     @Test
-    fun `save and retrieve without recurrence`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Einmalig", LocalDate.now())
+    fun `save and retrieve legacy event without recurrence`() {
+        // DB column is still nullable to support old data
+        val event = FixedEvent(FixedEventId(UUID.randomUUID()), HOUSEHOLD_ID, "Einmalig", LocalDate.now(), recurrenceRule = null)
         adapter.save(event)
 
         val found = adapter.findAllByHouseholdId(HOUSEHOLD_ID)[0]

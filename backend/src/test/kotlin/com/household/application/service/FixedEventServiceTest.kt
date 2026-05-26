@@ -6,6 +6,7 @@ import com.household.domain.model.FixedEventNotFoundException
 import com.household.domain.model.HouseholdId
 import com.household.domain.model.RecurrenceRule
 import com.household.domain.port.`in`.CreateFixedEventCommand
+import com.household.domain.port.`in`.UpdateFixedEventCommand
 import com.household.domain.port.out.FixedEventRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -26,7 +27,7 @@ class FixedEventServiceTest {
 
     @Test
     fun `create saves event and returns it`() {
-        val command = CreateFixedEventCommand(HOUSEHOLD_ID, "Müllabfuhr", monday)
+        val command = CreateFixedEventCommand(HOUSEHOLD_ID, "Müllabfuhr", monday, RecurrenceRule.Weekly)
         every { repo.save(any()) } answers { firstArg() }
 
         val result = service.create(command)
@@ -34,26 +35,6 @@ class FixedEventServiceTest {
         assertEquals("Müllabfuhr", result.title)
         assertEquals(monday, result.date)
         verify(exactly = 1) { repo.save(any()) }
-    }
-
-    @Test
-    fun `getForDate returns non-recurring event on exact date`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Handwerker", monday)
-        every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(event)
-
-        val result = service.getForDate(HOUSEHOLD_ID, monday)
-
-        assertEquals(1, result.size)
-    }
-
-    @Test
-    fun `getForDate excludes non-recurring event on wrong date`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Handwerker", monday)
-        every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(event)
-
-        val result = service.getForDate(HOUSEHOLD_ID, monday.plusDays(1))
-
-        assertEquals(0, result.size)
     }
 
     @Test
@@ -68,9 +49,9 @@ class FixedEventServiceTest {
     @Test
     fun `getForWeek returns events occurring in any of the 7 days`() {
         val friday = LocalDate.of(2026, 5, 8)
-        val mondayEvent = FixedEvent.create(HOUSEHOLD_ID, "Montag", monday)
-        val fridayEvent = FixedEvent.create(HOUSEHOLD_ID, "Freitag", friday)
-        val nextWeekEvent = FixedEvent.create(HOUSEHOLD_ID, "Nächste Woche", monday.plusWeeks(1))
+        val mondayEvent = FixedEvent.create(HOUSEHOLD_ID, "Montag", monday, RecurrenceRule.Weekly)
+        val fridayEvent = FixedEvent.create(HOUSEHOLD_ID, "Freitag", friday, RecurrenceRule.Weekly)
+        val nextWeekEvent = FixedEvent.create(HOUSEHOLD_ID, "Nächste Woche", monday.plusWeeks(1), RecurrenceRule.Weekly)
         every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(mondayEvent, fridayEvent, nextWeekEvent)
 
         val result = service.getForWeek(HOUSEHOLD_ID, monday)
@@ -87,7 +68,6 @@ class FixedEventServiceTest {
         val event = FixedEvent.create(HOUSEHOLD_ID, "Markt", monday, saturdayRule)
         every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(event)
 
-        // Week Mon-Sun starting May 4 includes Saturday May 9
         val result = service.getForWeek(HOUSEHOLD_ID, monday)
 
         assertEquals(1, result.size)
@@ -95,16 +75,13 @@ class FixedEventServiceTest {
 
     @Test
     fun `getForWeek sets date to the actual occurrence date within the week`() {
-        // Event created on May 4 (Monday), recurs weekly
         val event = FixedEvent.create(HOUSEHOLD_ID, "Sport", monday, RecurrenceRule.Weekly)
         every { repo.findAllByHouseholdId(HOUSEHOLD_ID) } returns listOf(event)
 
-        // Query a different week: May 11–17
         val nextMonday = monday.plusWeeks(1)
         val result = service.getForWeek(HOUSEHOLD_ID, nextMonday)
 
         assertEquals(1, result.size)
-        // Date must be the occurrence in the queried week, not the original creation date
         assertEquals(nextMonday, result.first().date)
     }
 
@@ -116,7 +93,6 @@ class FixedEventServiceTest {
         val result = service.getForWeek(HOUSEHOLD_ID, monday)
 
         assertEquals(7, result.size)
-        // Each day gets its own occurrence date
         val dates = result.map { it.date }.toSet()
         assertEquals(7, dates.size)
     }
@@ -132,23 +108,28 @@ class FixedEventServiceTest {
     }
 
     @Test
-    fun `rename updates event title`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", monday)
+    fun `update changes title, date and recurrence`() {
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", monday, RecurrenceRule.Weekly)
+        val wednesday = monday.plusDays(2)
         every { repo.findById(event.id) } returns event
         every { repo.save(any()) } answers { firstArg() }
 
-        val result = service.rename(event.id, "Biomüll")
+        val result = service.update(UpdateFixedEventCommand(event.id, "Biomüll", wednesday, RecurrenceRule.Biweekly))
 
         assertEquals("Biomüll", result.title)
-        verify { repo.save(match { it.title == "Biomüll" }) }
+        assertEquals(wednesday, result.date)
+        assertEquals(RecurrenceRule.Biweekly, result.recurrenceRule)
+        verify { repo.save(match { it.title == "Biomüll" && it.date == wednesday }) }
     }
 
     @Test
-    fun `rename throws FixedEventNotFoundException when event does not exist`() {
+    fun `update throws FixedEventNotFoundException when event does not exist`() {
         val unknownId = FixedEventId(UUID.randomUUID())
         every { repo.findById(unknownId) } returns null
 
-        assertThrows<FixedEventNotFoundException> { service.rename(unknownId, "Neuer Titel") }
+        assertThrows<FixedEventNotFoundException> {
+            service.update(UpdateFixedEventCommand(unknownId, "Titel", monday, RecurrenceRule.Weekly))
+        }
     }
 
     companion object {

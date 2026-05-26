@@ -12,7 +12,7 @@ import com.household.domain.port.`in`.CreateFixedEventUseCase
 import com.household.domain.port.`in`.DeleteFixedEventUseCase
 import com.household.domain.port.`in`.GetFixedEventsForDateUseCase
 import com.household.domain.port.`in`.GetFixedEventsForWeekUseCase
-import com.household.domain.port.`in`.RenameFixedEventUseCase
+import com.household.domain.port.`in`.UpdateFixedEventUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify
@@ -44,7 +44,7 @@ class FixedEventControllerTest {
     @MockkBean lateinit var getForDate: GetFixedEventsForDateUseCase
     @MockkBean lateinit var getForWeek: GetFixedEventsForWeekUseCase
     @MockkBean lateinit var deleteFixedEvent: DeleteFixedEventUseCase
-    @MockkBean lateinit var renameFixedEvent: RenameFixedEventUseCase
+    @MockkBean lateinit var updateFixedEvent: UpdateFixedEventUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -56,25 +56,7 @@ class FixedEventControllerTest {
     }
 
     @Test
-    fun `POST creates fixed event and returns 201`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.of(2026, 5, 4))
-        every { createFixedEvent.create(any()) } returns event
-
-        mockMvc.post("/api/fixed-events") {
-            header("Authorization", "Bearer valid-token")
-            contentType = MediaType.APPLICATION_JSON
-            content = """{"title": "Müllabfuhr", "date": "2026-05-04"}"""
-        }.andExpect {
-            status { isCreated() }
-            jsonPath("$.title") { value("Müllabfuhr") }
-            jsonPath("$.date") { value("2026-05-04") }
-            jsonPath("$.id") { exists() }
-            jsonPath("$.recurrence") { doesNotExist() }
-        }
-    }
-
-    @Test
-    fun `POST creates recurring fixed event and returns recurrence in response`() {
+    fun `POST creates recurring fixed event and returns 201`() {
         val event = FixedEvent.create(HOUSEHOLD_ID, "Gelber Sack", LocalDate.of(2026, 5, 4), RecurrenceRule.Weekly)
         every { createFixedEvent.create(any()) } returns event
 
@@ -84,7 +66,20 @@ class FixedEventControllerTest {
             content = """{"title": "Gelber Sack", "date": "2026-05-04", "recurrence": {"type": "WEEKLY"}}"""
         }.andExpect {
             status { isCreated() }
+            jsonPath("$.title") { value("Gelber Sack") }
+            jsonPath("$.date") { value("2026-05-04") }
             jsonPath("$.recurrence.type") { value("WEEKLY") }
+        }
+    }
+
+    @Test
+    fun `POST without recurrence returns 400`() {
+        mockMvc.post("/api/fixed-events") {
+            header("Authorization", "Bearer valid-token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"title": "Müllabfuhr", "date": "2026-05-04"}"""
+        }.andExpect {
+            status { isBadRequest() }
         }
     }
 
@@ -92,7 +87,7 @@ class FixedEventControllerTest {
     fun `POST without token returns 401`() {
         mockMvc.post("/api/fixed-events") {
             contentType = MediaType.APPLICATION_JSON
-            content = """{"title": "Müllabfuhr", "date": "2026-05-04"}"""
+            content = """{"title": "Müllabfuhr", "date": "2026-05-04", "recurrence": {"type": "WEEKLY"}}"""
         }.andExpect {
             status { isUnauthorized() }
         }
@@ -103,7 +98,7 @@ class FixedEventControllerTest {
         mockMvc.post("/api/fixed-events") {
             header("Authorization", "Bearer valid-token")
             contentType = MediaType.APPLICATION_JSON
-            content = """{"title": "", "date": "2026-05-04"}"""
+            content = """{"title": "", "date": "2026-05-04", "recurrence": {"type": "WEEKLY"}}"""
         }.andExpect {
             status { isBadRequest() }
         }
@@ -112,7 +107,7 @@ class FixedEventControllerTest {
     @Test
     fun `GET today returns fixed events for today`() {
         val events = listOf(
-            FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.now()),
+            FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.now(), RecurrenceRule.Weekly),
         )
         every { getForDate.getForDate(HOUSEHOLD_ID, LocalDate.now()) } returns events
 
@@ -129,7 +124,7 @@ class FixedEventControllerTest {
     fun `GET week returns fixed events for the week`() {
         val start = LocalDate.of(2026, 5, 4)
         val events = listOf(
-            FixedEvent.create(HOUSEHOLD_ID, "Gelber Sack", start),
+            FixedEvent.create(HOUSEHOLD_ID, "Gelber Sack", start, RecurrenceRule.Weekly),
         )
         every { getForWeek.getForWeek(HOUSEHOLD_ID, start) } returns events
 
@@ -149,18 +144,19 @@ class FixedEventControllerTest {
     }
 
     @Test
-    fun `PATCH renames fixed event and returns updated event`() {
-        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.of(2026, 5, 4))
-        val renamed = event.rename("Biomüll")
-        every { renameFixedEvent.rename(event.id, "Biomüll") } returns renamed
+    fun `PATCH updates fixed event title, date and recurrence`() {
+        val event = FixedEvent.create(HOUSEHOLD_ID, "Müllabfuhr", LocalDate.of(2026, 5, 4), RecurrenceRule.Weekly)
+        val updated = event.update("Biomüll", LocalDate.of(2026, 5, 5), RecurrenceRule.Biweekly)
+        every { updateFixedEvent.update(any()) } returns updated
 
         mockMvc.patch("/api/fixed-events/${event.id.value}") {
             header("Authorization", "Bearer valid-token")
             contentType = MediaType.APPLICATION_JSON
-            content = """{"title": "Biomüll"}"""
+            content = """{"title": "Biomüll", "date": "2026-05-05", "recurrence": {"type": "BIWEEKLY"}}"""
         }.andExpect {
             status { isOk() }
             jsonPath("$.title") { value("Biomüll") }
+            jsonPath("$.recurrence.type") { value("BIWEEKLY") }
         }
     }
 

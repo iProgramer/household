@@ -18,7 +18,7 @@ data class FixedEvent(
             householdId: HouseholdId,
             title: String,
             date: LocalDate,
-            recurrenceRule: RecurrenceRule? = null,
+            recurrenceRule: RecurrenceRule,
         ): FixedEvent {
             require(title.isNotBlank()) { "Title must not be blank" }
             return FixedEvent(
@@ -31,9 +31,9 @@ data class FixedEvent(
         }
     }
 
-    fun rename(newTitle: String): FixedEvent {
+    fun update(newTitle: String, newDate: LocalDate, newRecurrenceRule: RecurrenceRule): FixedEvent {
         require(newTitle.isNotBlank()) { "Title must not be blank" }
-        return copy(title = newTitle.trim())
+        return copy(title = newTitle.trim(), date = newDate, recurrenceRule = newRecurrenceRule)
     }
 
     fun occursOn(targetDate: LocalDate): Boolean {

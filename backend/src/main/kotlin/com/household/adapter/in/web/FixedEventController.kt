@@ -9,9 +9,11 @@ import com.household.domain.port.`in`.CreateFixedEventUseCase
 import com.household.domain.port.`in`.DeleteFixedEventUseCase
 import com.household.domain.port.`in`.GetFixedEventsForDateUseCase
 import com.household.domain.port.`in`.GetFixedEventsForWeekUseCase
-import com.household.domain.port.`in`.RenameFixedEventUseCase
+import com.household.domain.port.`in`.UpdateFixedEventCommand
+import com.household.domain.port.`in`.UpdateFixedEventUseCase
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -35,7 +37,7 @@ class FixedEventController(
     private val getForDate: GetFixedEventsForDateUseCase,
     private val getForWeek: GetFixedEventsForWeekUseCase,
     private val deleteFixedEvent: DeleteFixedEventUseCase,
-    private val renameFixedEvent: RenameFixedEventUseCase,
+    private val updateFixedEvent: UpdateFixedEventUseCase,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -48,7 +50,7 @@ class FixedEventController(
                 householdId = principal.householdId,
                 title = request.title,
                 date = request.date,
-                recurrenceRule = request.recurrence?.toDomain(),
+                recurrenceRule = request.recurrence.toDomain(),
             )
         )
     )
@@ -58,10 +60,19 @@ class FixedEventController(
         getForDate.getForDate(principal.householdId, LocalDate.now()).map(FixedEventResponse::from)
 
     @PatchMapping("/{id}")
-    fun rename(
+    fun update(
         @PathVariable id: UUID,
-        @RequestBody request: RenameFixedEventRequest,
-    ): FixedEventResponse = FixedEventResponse.from(renameFixedEvent.rename(FixedEventId(id), request.title))
+        @RequestBody @Valid request: UpdateFixedEventRequest,
+    ): FixedEventResponse = FixedEventResponse.from(
+        updateFixedEvent.update(
+            UpdateFixedEventCommand(
+                id = FixedEventId(id),
+                title = request.title,
+                date = request.date,
+                recurrenceRule = request.recurrence.toDomain(),
+            )
+        )
+    )
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -78,12 +89,16 @@ class FixedEventController(
         getForWeek.getForWeek(principal.householdId, startDate).map(FixedEventResponse::from)
 }
 
-data class RenameFixedEventRequest(val title: String)
-
 data class CreateFixedEventRequest(
     @field:NotBlank val title: String,
     val date: LocalDate,
-    val recurrence: RecurrenceRequest? = null,
+    @field:NotNull val recurrence: RecurrenceRequest,
+)
+
+data class UpdateFixedEventRequest(
+    @field:NotBlank val title: String,
+    val date: LocalDate,
+    @field:NotNull val recurrence: RecurrenceRequest,
 )
 
 data class FixedEventResponse(
