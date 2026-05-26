@@ -130,6 +130,7 @@
 
       <div class="sidebar-footer">
         <button onclick={shareInvite}>Einladen</button>
+        <a href="/change-password" class="sidebar-footer-link">Passwort ändern</a>
         <button onclick={() => { authStore.logout(); goto('/login'); }}>Abmelden</button>
       </div>
     </aside>
@@ -409,12 +410,14 @@
       border-top: 1px solid var(--color-divider);
     }
 
-    .sidebar-footer button {
+    .sidebar-footer button,
+    .sidebar-footer-link {
       font-size: 0.8125rem;
       color: var(--color-muted);
     }
 
-    .sidebar-footer button:hover {
+    .sidebar-footer button:hover,
+    .sidebar-footer-link:hover {
       color: var(--color-text);
     }
 
