@@ -239,7 +239,11 @@
 
   .title {
     flex: 1;
+    min-width: 0;
     font-size: 0.9375rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .strikethrough {
@@ -267,6 +271,7 @@
 
   .title-input {
     flex: 1;
+    min-width: 0;
     font-size: 0.9375rem;
     border: none;
     border-bottom: var(--border-width) solid var(--color-border);
