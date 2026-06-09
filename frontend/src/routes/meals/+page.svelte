@@ -12,6 +12,8 @@
   let editingId = $state<string | null>(null);
   let editTitle = $state('');
   let openMenuId = $state<string | null>(null);
+  let schedulingId = $state<string | null>(null);
+  let scheduleDate = $state('');
 
   async function load() {
     loading = true;
@@ -68,6 +70,13 @@
   function handleEditKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') { e.preventDefault(); saveEdit(); }
     if (e.key === 'Escape') { editingId = null; }
+  }
+
+  async function assignMeal(id: string) {
+    if (!scheduleDate) return;
+    await mealsApi.assign(id, scheduleDate);
+    schedulingId = null;
+    scheduleDate = '';
   }
 
   function onKeydown(e: KeyboardEvent) {
@@ -138,6 +147,9 @@
 
               {#if openMenuId === idea.id}
                 <div class="menu-dropdown" role="menu">
+                  <button class="menu-item" role="menuitem" onclick={() => { openMenuId = null; schedulingId = idea.id; scheduleDate = ''; }}>
+                    Einplanen
+                  </button>
                   <button class="menu-item" role="menuitem" onclick={() => { openMenuId = null; startEdit(idea); }}>
                     Bearbeiten
                   </button>
@@ -146,6 +158,23 @@
                   </button>
                 </div>
               {/if}
+            </div>
+          {/if}
+
+          {#if schedulingId === idea.id}
+            <div class="schedule-row">
+              <input
+                type="date"
+                class="schedule-date"
+                bind:value={scheduleDate}
+                onkeydown={(e) => { if (e.key === 'Escape') schedulingId = null; }}
+              />
+              <button
+                class="schedule-btn"
+                disabled={!scheduleDate}
+                onclick={() => assignMeal(idea.id)}
+              >Einplanen</button>
+              <button class="schedule-cancel" onclick={() => { schedulingId = null; }}>✕</button>
             </div>
           {/if}
         </li>
@@ -220,6 +249,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     padding: 0.625rem 1rem;
   }
 
@@ -296,6 +326,49 @@
 
   .menu-item.danger {
     color: var(--accent-rose);
+  }
+
+  .schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0 0.125rem;
+    border-top: 1px solid var(--color-divider);
+    margin-top: 0.375rem;
+    width: 100%;
+  }
+
+  .schedule-date {
+    flex: 1;
+    font-size: 0.875rem;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    padding: 0.3rem 0.5rem;
+    background: var(--color-surface);
+    outline: none;
+  }
+
+  .schedule-btn {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    padding: 0.3rem 0.625rem;
+    background: var(--color-text);
+    color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    flex-shrink: 0;
+  }
+
+  .schedule-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .schedule-cancel {
+    font-size: 0.8125rem;
+    color: var(--color-muted);
+    padding: 0.3rem 0.375rem;
+    flex-shrink: 0;
   }
 
   .state-msg {
