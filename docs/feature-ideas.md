@@ -5,6 +5,28 @@ primär als Gedächtnisstütze für spätere Planung.
 
 ---
 
+## Bug: Task-Cards haben keine einheitliche Höhe (Mobile)
+
+**Problem:** Die Breite/Höhe der Task-Karten variiert je nach Inhalt — kurze Titel ergeben
+schmale Karten, lange Titel oder viele Badges (Projekt, Member, Wiederholung) breite.
+Das wirkt auf Mobile unruhig und inkonsistent.
+
+**Gewünschtes Verhalten:** Alle Karten haben eine feste, einheitliche Höhe.
+Texte werden bei Bedarf abgekürzt (`…`), Elemente ggf. zweizeilig oder kleiner.
+Unabhängig vom Inhalt soll die Karte immer gleich groß aussehen.
+
+**Mögliche Umsetzung:**
+- Feste Höhe auf `.task-item` (z.B. `min-height` oder festes `height`)
+- Titel: bereits `text-overflow: ellipsis` vorhanden, ggf. `max-width` anpassen
+- Projekt-Badge: `max-width` begrenzen, Overflow mit `…`
+- Member-Badge + Menü-Button: `flex-shrink: 0` sicherstellen
+- Zweizeiligkeit gezielt erlauben (z.B. Titel wrappen, Rest einzeilig)
+
+**Reifegrad:** Konkret und umsetzbar, Designentscheidung (feste Höhe vs. zweizeilig)
+muss noch getroffen werden.
+
+---
+
 ## Drag & Drop — Aufgaben zwischen Wochentagen verschieben
 
 **Kontext:** Wochenansicht (Übersicht-Modus), 7 Tages-Karten nebeneinander.
