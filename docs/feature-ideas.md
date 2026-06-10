@@ -51,30 +51,6 @@ Kein Backend-Aufwand nötig.
 
 ---
 
-## Überfällige Aufgaben — Sichtbarkeit nicht erledigter Vortages-Tasks
-
-**Kontext:** Offene Aufgaben mit einem Datum in der Vergangenheit tauchen weder in der
-Heute-Ansicht noch in der Wochenansicht auf. Sie sind nicht verloren (in "Alles → Offen"
-sichtbar), aber auch nicht aktiv präsent.
-
-**Kernfrage (noch offen):** Sollen überfällige Aufgaben automatisch auf heute verschoben
-werden, oder sollen sie als "Rückstand" explizit angezeigt werden?
-
-**Varianten:**
-
-| Variante | Beschreibung | Vorteil | Nachteil |
-|----------|-------------|---------|----------|
-| A – Abschnitt "Überfällig" in Heute | Eigener roter Bereich oben, Query `date < today AND status = OPEN` | Ursprungsdatum bleibt, bewusste Entscheidung nötig | Kann sich anhäufen |
-| B – Auto-Rollover auf heute | Beim Laden alle überfälligen Tasks auf `today` datieren | Immer präsent in Heute-Ansicht | Datumsverlust, fühlt sich heimlich an |
-| C – Badge in der Navigation | Rote Zahl auf dem Heute-Icon | Dezent, kein Platzbedarf | Man muss trotzdem aktiv handeln |
-
-**Backend-Aufwand:** Gering — neuer Endpoint `GET /api/tasks/overdue` (`date < today AND status = OPEN`).
-Frontend-Aufwand: A ~2h, B ~1h, C ~1h.
-
-**Tendenz:** Aufgaben sollen sichtbar bleiben (kein stilles Verschwinden),
-konkrete Darstellung noch offen.
-
----
 
 ## BDD-Tests mit Cucumber (technische Verbesserung)
 
