@@ -205,6 +205,7 @@
   .app-shell {
     display: flex;
     min-height: 100dvh;
+    overflow-x: hidden;
   }
 
   /* Sidebar – desktop only */
