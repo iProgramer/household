@@ -117,29 +117,86 @@ bevor ein konkreter Implementierungsplan entsteht.
 Mahlzeiten…). Eine alternative Strukturidee: die App orientiert sich daran, *wie* man sie nutzt —
 also am mentalen Modus des Nutzers, nicht an der Datenstruktur.
 
-**Grobe Nutzungsmodi (noch nicht fertig gedacht):**
-
-- **Planen** (z.B. Sonntagabend): Woche überblicken, Aufgaben einteilen, Mahlzeiten planen,
-  Projekte voranbringen. Alles was mit "was kommt auf uns zu?" zu tun hat.
-- **Abarbeiten** (unter der Woche, täglich): Fokus auf heute — was ist dran, was hake ich ab?
-  Minimale Ablenkung, klarer Fokus.
-- **Erfassen** (jederzeit, spontan): Schnell etwas notieren, das nicht verloren gehen soll —
-  neue Aufgabe, Mahlzeiten-Idee, Projektidee. Ohne großen Kontext.
-
-**Mögliche Konsequenzen für die Navigation:**
-Statt der heutigen Tabs (Heute / Woche / Projekte / Alles / Essen) könnte es
-Modi-orientierte Einstiegspunkte geben — z.B. "Planen", "Heute", "Erfassen".
-Die Daten dahinter bleiben dieselben, aber der Zugang ändert sich.
-
 **Verwandtes Konzept:** GTD (Getting Things Done) unterscheidet ähnlich zwischen
 Capture → Clarify → Organize → Reflect → Engage. Nicht 1:1 übertragbar, aber
 die Grundidee (unterschiedliche mentale Modi brauchen unterschiedliche UI-Zustände)
 ist dieselbe.
 
-**Reifegrad:** Sehr frühe Idee — noch kein konkreter Vorschlag. Bevor hier etwas
-umgebaut wird, braucht es einen klareren Entwurf: welche Modi gibt es genau,
-was gehört jeweils dazu, und was fällt weg oder vereinfacht sich dadurch?
-Wird gemeinsam weiterentwickelt.
+### Konzept: Drei Modi
+
+Der Kerngedanke: Die Navigation bildet nicht *Datenbereiche* ab, sondern *Phasen im
+Workflow*. Dieselben Daten (Aufgaben, Mahlzeiten, Termine, Projekte) tauchen in
+mehreren Modi auf — aber mit unterschiedlichen **verfügbaren Aktionen**.
+
+```
+Erfassen → Planen → Abarbeiten
+"Was gibt es?"   "Wann?"   "Los geht's"
+```
+
+### 1. Abarbeiten — "Was steht heute an?"
+
+Der tägliche Begleiter. Hier wird erledigt, nicht organisiert.
+
+- **Fokus:** Heute, detailliert — wer macht was, welches Projekt, Termine, Mahlzeit
+- **Nebenansicht:** Restliche Woche im Überblick, kompakter/reduzierter
+- **Tages-Drilldown:** In andere Tage reinspringen für Details
+- **Hauptaktion:** Abhaken
+- **Auch möglich:** Aufgabe verschieben (wenn man etwas nicht schafft — flexibel,
+  auch wenn es "streng genommen" in Planen gehört)
+- **Nicht möglich:** Neue Dinge anlegen, Projekte verwalten
+
+### 2. Planen — "Was machen wir die nächsten Tage?"
+
+Die Sonntagabend-Session. Hier wird verteilt und terminiert.
+
+- **Fokus:** Woche überblicken, Aufgaben auf Tage legen, Mahlzeiten einplanen
+- **Tages-Drilldown:** Ja, um zu sehen was an einem Tag schon liegt
+- **Nicht:** Neue Dinge anlegen (→ Erfassen), Dinge abhaken
+- **Hauptaktion:** Aufgaben terminieren, Mahlzeiten zuweisen
+- Typischer Inhalt: Backlog-Aufgaben ohne Datum, Mahlzeiten-Ideen, Wochenkalender
+
+### 3. Erfassen / Organisieren — "Das fällt mir ein"
+
+Das Inventar pflegen. Kein Zeitbezug, nur: *was gibt es?*
+
+- **Inhalt:** Aufgaben, Projekte + Teilschritte, Mahlzeiten-Ideen, Termine
+- **Hauptaktion:** Anlegen, bearbeiten, löschen, strukturieren
+- **Quick-Capture:** Globaler +-Button als Schnellzugang denkbar (ohne in den
+  Modus wechseln zu müssen)
+- **Herausforderung:** Hier kommt viel zusammen — muss gut strukturiert sein
+  (Tabs, Akkordeons, oder andere Gruppierung nötig)
+
+### Aktionsmatrix
+
+| Aktion | Abarbeiten | Planen | Erfassen |
+|---|---|---|---|
+| Abhaken | ✅ Hauptaktion | ❌ | ❌ |
+| Verschieben/Einplanen | Möglich (sekundär) | ✅ Hauptaktion | ❌ |
+| Anlegen/Bearbeiten/Löschen | ❌ | ❌ | ✅ Hauptaktion |
+| Tagesansicht | Heute (detail) + Woche (kompakt) | Woche + Drilldown | — |
+
+### Offene Gestaltungsfragen (für Mockup-Phase)
+
+- **Navigation:** Drei Tabs? Andere Aufteilung? Default-Landingpage?
+  → Offen, soll per Mockup exploriert werden
+- **Erfassen-Struktur:** Wie verhindert man dass "Erfassen" überladen wirkt
+  (Aufgaben + Projekte + Mahlzeiten + Termine auf einer Seite)?
+  → Offen, kreative Lösung gesucht
+- **Quick-Capture:** Separater globaler +-Button neben der Navigation,
+  oder integriert in den Erfassen-Modus?
+  → Vermutlich beides: Quick-Add global, vollständige Verwaltung im Modus
+
+### Nächster Schritt
+
+Mockups mit Claude Design erstellen lassen. Prompt liegt bereit (siehe unten im Dokument
+oder separat). Ziel: 2–3 visuelle Varianten für die Navigation und Seitenstruktur,
+mobile-first, auf Basis der hier beschriebenen drei Modi.
+
+### Randbemerkung
+
+Die App ist aktuell auf 2 Personen beschränkt, soll aber perspektivisch auch
+mehr Teilnehmer unterstützen können. Das beeinflusst ggf. die Darstellung
+von Zuweisungen und Fairness-Statistiken.
 
 ---
 
