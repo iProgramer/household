@@ -139,11 +139,7 @@
       <section class="section overdue-section">
         <p class="section-label overdue-label">Überfällig</p>
         {#each overdueTasks.filter(t => t.status === 'OPEN') as task (task.id)}
-          <div class="task-row">
-            <div class="task-wrap">
-              <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
-            </div>
-          </div>
+          <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeOverdue(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
         {/each}
       </section>
     {/if}
@@ -181,14 +177,7 @@
       <p class="section-label">Aufgaben</p>
 
       {#each openTasks as task (task.id)}
-        <div class="task-row">
-          <div class="task-wrap">
-            <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
-          </div>
-          {#if task.assignedTo}
-            <PersonAvatar memberId={task.assignedTo} {currentMemberId} email={currentEmail} size={24} />
-          {/if}
-        </div>
+        <TaskItem {task} projectTitle={task.projectId ? projectsMap.get(task.projectId) : undefined} oncomplete={() => completeTask(task.id)} onreopen={() => reopenTask(task.id)} onunschedule={() => unscheduleTask(task.id)} onedit={(title, assignedTo) => editTask(task.id, title, assignedTo)} ondelete={() => deleteTask(task.id)} />
       {/each}
 
       <AddTaskForm
@@ -273,22 +262,6 @@
   .empty-hint {
     font-size: 0.875rem;
     padding: 0.25rem 0;
-  }
-
-  .task-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .task-wrap {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .task-wrap :global(.task-item) {
-    margin-bottom: 0;
   }
 
   .done-section {
