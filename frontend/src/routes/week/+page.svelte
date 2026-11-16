@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tasks as tasksApi, fixedEvents as eventsApi, meals as mealsApi, projects as projectsApi, ApiError } from '$lib/api';
-  import type { Task, FixedEvent, Meal } from '$lib/api';
+  import { tasks as tasksApi, fixedEvents as eventsApi, recipes as recipesApi, plannedMeals as plannedMealsApi, projects as projectsApi, ApiError } from '$lib/api';
+  import type { Task, FixedEvent, Recipe, PlannedMeal } from '$lib/api';
   import FixedEventItem from '$lib/components/FixedEventItem.svelte';
   import { authStore } from '$lib/stores/auth';
   import TaskItem from '$lib/components/TaskItem.svelte';
@@ -24,8 +24,8 @@
 
   let weekTasks         = $state<Task[]>([]);
   let weekEvents        = $state<FixedEvent[]>([]);
-  let weekPlannedMeals  = $state<Meal[]>([]);
-  let mealIdeas         = $state<Meal[]>([]);
+  let weekPlannedMeals  = $state<PlannedMeal[]>([]);
+  let recipeList        = $state<Recipe[]>([]);
   let unplannedTasks    = $state<Task[]>([]);
   let projectsMap       = $state<Map<string, string>>(new Map());
   let loading   = $state(true);
@@ -58,18 +58,18 @@
     showEventForm = false;
     overviewEventForms = {};
     try {
-      const [wt, we, wm, ideas, ut, projs] = await Promise.all([
+      const [wt, we, wm, recs, ut, projs] = await Promise.all([
         tasksApi.week(mondayIso),
         eventsApi.week(mondayIso),
-        mealsApi.forWeek(mondayIso),
-        mealsApi.ideas(),
+        plannedMealsApi.forWeek(mondayIso),
+        recipesApi.list(),
         tasksApi.unplanned(),
         projectsApi.list(),
       ]);
       weekTasks        = wt;
       weekEvents       = we;
       weekPlannedMeals = wm;
-      mealIdeas        = ideas;
+      recipeList       = recs;
       unplannedTasks   = ut;
       projectsMap      = new Map(projs.map((p) => [p.id, p.title]));
     } catch (e) {
@@ -87,7 +87,7 @@
 
   function tasksForDay(dayIso: string)  { return weekTasks.filter((t) => t.date === dayIso); }
   function eventsForDay(dayIso: string) { return weekEvents.filter((e) => e.date === dayIso); }
-  function mealsForDay(dayIso: string)  { return weekPlannedMeals.filter((m) => m.date === dayIso); }
+  function mealForDay(dayIso: string): PlannedMeal | undefined  { return weekPlannedMeals.find((m) => m.date === dayIso); }
 
   async function editEvent(id: string, data: { title: string; date: string; recurrence: import('$lib/api').Recurrence }) {
     const updated = await eventsApi.update(id, data);
@@ -99,10 +99,9 @@
     weekEvents = weekEvents.filter((e) => e.id !== id);
   }
 
-  async function unassignMeal(id: string) {
-    const unassigned = await mealsApi.unassign(id);
+  async function unplanMeal(id: string) {
+    await plannedMealsApi.unplan(id);
     weekPlannedMeals = weekPlannedMeals.filter((m) => m.id !== id);
-    mealIdeas = [...mealIdeas, unassigned];
   }
 
   async function completeTask(id: string) {
@@ -146,7 +145,7 @@
   let selectedDayIso   = $derived(isoDate(days[selectedDayIdx]));
   let selectedTasks    = $derived(tasksForDay(selectedDayIso));
   let selectedEvents   = $derived(eventsForDay(selectedDayIso));
-  let selectedMeals    = $derived(mealsForDay(selectedDayIso));
+  let selectedMeal     = $derived(mealForDay(selectedDayIso));
 
   onMount(() => unsubAuth);
 </script>
@@ -224,24 +223,23 @@
         </div>
       {/if}
 
-      {#if selectedMeals.length > 0}
+      {#if selectedMeal}
         <div class="meal-chips-row">
-          {#each selectedMeals as meal (meal.id)}
-            <span class="meal-chip">
-              {meal.title}
-              <button class="meal-unassign" onclick={() => unassignMeal(meal.id)} title="Zurück in den Pool" aria-label="Entfernen">✕</button>
-            </span>
-          {/each}
+          <span class="meal-chip">
+            {selectedMeal.title}
+            <button class="meal-unassign" onclick={() => unplanMeal(selectedMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
+          </span>
+        </div>
+      {:else}
+        <div class="meal-combobox-wrap">
+          <MealCombobox
+            date={selectedDayIso}
+            recipes={recipeList}
+            onplanned={(meal) => { weekPlannedMeals = [...weekPlannedMeals, meal]; }}
+            onrecipecreated={(recipe) => { recipeList = [...recipeList, recipe]; }}
+          />
         </div>
       {/if}
-      <div class="meal-combobox-wrap">
-        <MealCombobox
-          date={selectedDayIso}
-          ideas={mealIdeas}
-          onassigned={(meal) => { weekPlannedMeals = [...weekPlannedMeals, meal]; mealIdeas = mealIdeas.filter((m) => m.id !== meal.id); }}
-          onideacreated={(idea) => { mealIdeas = [...mealIdeas, idea]; }}
-        />
-      </div>
 
       <div class="tasks-list">
         {#each selectedTasks as task (task.id)}
@@ -273,8 +271,8 @@
       {@const iso = isoDate(day)}
       {@const dayTasks  = tasksForDay(iso)}
       {@const dayEvents = eventsForDay(iso)}
-      {@const dayMeals  = mealsForDay(iso)}
-      {@const isEmpty   = dayTasks.length === 0 && dayEvents.length === 0 && dayMeals.length === 0}
+      {@const dayMeal   = mealForDay(iso)}
+      {@const isEmpty   = dayTasks.length === 0 && dayEvents.length === 0 && !dayMeal}
 
       <div class="agenda-day" class:today={iso === todayIso} class:empty={isEmpty}>
         <div class="agenda-day-header">
@@ -312,14 +310,12 @@
           </div>
         {/if}
 
-        {#if dayMeals.length > 0}
+        {#if dayMeal}
           <div class="meal-chips-row">
-            {#each dayMeals as meal (meal.id)}
-              <span class="meal-chip">
-                {meal.title}
-                <button class="meal-unassign" onclick={() => unassignMeal(meal.id)} title="Zurück in den Pool" aria-label="Entfernen">✕</button>
-              </span>
-            {/each}
+            <span class="meal-chip">
+              {dayMeal.title}
+              <button class="meal-unassign" onclick={() => unplanMeal(dayMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
+            </span>
           </div>
         {/if}
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fixedEvents as eventsApi, meals as mealsApi, projects as projectsApi, ApiError } from '$lib/api';
-  import type { Task, FixedEvent, Meal } from '$lib/api';
+  import { fixedEvents as eventsApi, recipes as recipesApi, plannedMeals as plannedMealsApi, projects as projectsApi, ApiError } from '$lib/api';
+  import type { Task, FixedEvent, Recipe, PlannedMeal } from '$lib/api';
   import FixedEventItem from '$lib/components/FixedEventItem.svelte';
   import { authStore } from '$lib/stores/auth';
   import { tasks as tasksApi } from '$lib/api';
@@ -15,8 +15,8 @@
   let todayTasks = $state<Task[]>([]);
   let overdueTasks = $state<Task[]>([]);
   let todayEvents = $state<FixedEvent[]>([]);
-  let todayMeals = $state<Meal[]>([]);
-  let mealIdeas = $state<Meal[]>([]);
+  let todayMeal = $state<PlannedMeal | null>(null);
+  let recipeList = $state<Recipe[]>([]);
   let projectsMap = $state<Map<string, string>>(new Map());
   let loading = $state(true);
   let loadError = $state('');
@@ -38,19 +38,19 @@
     loading = true;
     loadError = '';
     try {
-      const [t, o, e, m, ideas, projs] = await Promise.all([
+      const [t, o, e, meal, recs, projs] = await Promise.all([
         tasksApi.today(),
         tasksApi.overdue(),
         eventsApi.today(),
-        mealsApi.forDate(todayIso),
-        mealsApi.ideas(),
+        plannedMealsApi.forDate(todayIso),
+        recipesApi.list(),
         projectsApi.list(),
       ]);
       todayTasks = t;
       overdueTasks = o;
       todayEvents = e;
-      todayMeals = m;
-      mealIdeas = ideas;
+      todayMeal = meal;
+      recipeList = recs;
       projectsMap = new Map(projs.map((p) => [p.id, p.title]));
     } catch (e) {
       loadError = e instanceof ApiError ? e.message : 'Fehler beim Laden';
@@ -104,10 +104,9 @@
     todayEvents = todayEvents.filter((e) => e.id !== id);
   }
 
-  async function unassignMeal(id: string) {
-    const unassigned = await mealsApi.unassign(id);
-    todayMeals = todayMeals.filter((m) => m.id !== id);
-    mealIdeas = [...mealIdeas, unassigned];
+  async function unplanMeal(id: string) {
+    await plannedMealsApi.unplan(id);
+    todayMeal = null;
   }
 
   let openTasks = $derived(todayTasks.filter((t) => t.status === 'OPEN'));
@@ -196,21 +195,20 @@
     </section>
 
     <section class="section">
-      <p class="section-label">Mahlzeiten</p>
-      <div class="meal-chips">
-        {#each todayMeals as meal (meal.id)}
-          <div class="meal-chip card">
-            <span>{meal.title}</span>
-            <button class="meal-unassign" onclick={() => unassignMeal(meal.id)} title="Zurück in den Pool" aria-label="Entfernen">✕</button>
-          </div>
-        {/each}
-      </div>
-      <MealCombobox
-        date={todayIso}
-        ideas={mealIdeas}
-        onassigned={(meal) => { todayMeals = [...todayMeals, meal]; mealIdeas = mealIdeas.filter((m) => m.id !== meal.id); }}
-        onideacreated={(idea) => { mealIdeas = [...mealIdeas, idea]; }}
-      />
+      <p class="section-label">Mahlzeit</p>
+      {#if todayMeal}
+        <div class="meal-chip card">
+          <span>{todayMeal.title}</span>
+          <button class="meal-unassign" onclick={() => unplanMeal(todayMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
+        </div>
+      {:else}
+        <MealCombobox
+          date={todayIso}
+          recipes={recipeList}
+          onplanned={(meal) => { todayMeal = meal; }}
+          onrecipecreated={(recipe) => { recipeList = [...recipeList, recipe]; }}
+        />
+      {/if}
     </section>
   {/if}
 </div>
@@ -282,13 +280,6 @@
 
   .overdue-label {
     color: var(--accent-rose);
-  }
-
-  .meal-chips {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    margin-bottom: 0.5rem;
   }
 
   .meal-chip {

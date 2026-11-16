@@ -70,7 +70,7 @@
     },
     {
       href: '/meals',
-      label: 'Mahlzeiten',
+      label: 'Rezepte',
       icon: `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2 13c0-4 2-7 6-7s6 3 6 7"/>
         <line x1="8" y1="6" x2="8" y2="3"/>

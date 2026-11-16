@@ -89,13 +89,16 @@ export interface MealNote {
   note: string;
 }
 
-export type MealStatus = 'IDEA' | 'PLANNED';
-
-export interface Meal {
+export interface Recipe {
   id: string;
   title: string;
-  date: string | null;
-  status: MealStatus;
+}
+
+export interface PlannedMeal {
+  id: string;
+  date: string;
+  title: string;
+  recipeId: string | null;
 }
 
 export interface Member {
@@ -183,19 +186,25 @@ export const household = {
   inviteCode: () => request<{ inviteCode: string }>('/household/invite-code'),
 };
 
-// ── Meals ─────────────────────────────────────────────────────
+// ── Recipes ──────────────────────────────────────────────────
 
-export const meals = {
-  ideas: () => request<Meal[]>('/meals/ideas'),
-  forDate: (date: string) => request<Meal[]>(`/meals/date/${date}`),
-  forWeek: (startDate: string) => request<Meal[]>(`/meals/week?startDate=${startDate}`),
-  create: (title: string) => request<Meal>('/meals', { method: 'POST', body: JSON.stringify({ title }) }),
+export const recipes = {
+  list: () => request<Recipe[]>('/recipes'),
+  create: (title: string) =>
+    request<Recipe>('/recipes', { method: 'POST', body: JSON.stringify({ title }) }),
   rename: (id: string, title: string) =>
-    request<Meal>(`/meals/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
-  assign: (id: string, date: string) =>
-    request<Meal>(`/meals/${id}/assign`, { method: 'PUT', body: JSON.stringify({ date }) }),
-  unassign: (id: string) => request<Meal>(`/meals/${id}/unassign`, { method: 'PUT' }),
-  delete: (id: string) => request<void>(`/meals/${id}`, { method: 'DELETE' }),
+    request<Recipe>(`/recipes/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
+  delete: (id: string) => request<void>(`/recipes/${id}`, { method: 'DELETE' }),
+};
+
+// ── Planned Meals ────────────────────────────────────────────
+
+export const plannedMeals = {
+  forDate: (date: string) => request<PlannedMeal | null>(`/planned-meals/date/${date}`),
+  forWeek: (startDate: string) => request<PlannedMeal[]>(`/planned-meals/week?startDate=${startDate}`),
+  plan: (date: string, recipeId?: string, title?: string) =>
+    request<PlannedMeal>('/planned-meals', { method: 'POST', body: JSON.stringify({ date, recipeId, title }) }),
+  unplan: (id: string) => request<void>(`/planned-meals/${id}`, { method: 'DELETE' }),
 };
 
 // ── Meal Notes ────────────────────────────────────────────────

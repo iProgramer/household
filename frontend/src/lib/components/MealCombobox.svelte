@@ -1,17 +1,17 @@
 <script lang="ts">
-  import { meals as mealsApi } from '$lib/api';
-  import type { Meal } from '$lib/api';
+  import { plannedMeals as plannedMealsApi, recipes as recipesApi } from '$lib/api';
+  import type { Recipe, PlannedMeal } from '$lib/api';
 
   let {
     date,
-    ideas,
-    onassigned,
-    onideacreated,
+    recipes,
+    onplanned,
+    onrecipecreated,
   }: {
     date: string;
-    ideas: Meal[];
-    onassigned: (meal: Meal) => void;
-    onideacreated?: (meal: Meal) => void;
+    recipes: Recipe[];
+    onplanned: (meal: PlannedMeal) => void;
+    onrecipecreated?: (recipe: Recipe) => void;
   } = $props();
 
   let inputValue = $state('');
@@ -21,15 +21,15 @@
 
   let filtered = $derived(
     inputValue.trim().length === 0
-      ? ideas
-      : ideas.filter((m) => m.title.toLowerCase().includes(inputValue.trim().toLowerCase()))
+      ? recipes
+      : recipes.filter((r) => r.title.toLowerCase().includes(inputValue.trim().toLowerCase()))
   );
 
-  async function selectIdea(idea: Meal) {
+  async function selectRecipe(recipe: Recipe) {
     saving = true;
     try {
-      const assigned = await mealsApi.assign(idea.id, date);
-      onassigned(assigned);
+      const planned = await plannedMealsApi.plan(date, recipe.id);
+      onplanned(planned);
       inputValue = '';
       open = false;
     } finally {
@@ -37,15 +37,16 @@
     }
   }
 
-  async function createAndAssign() {
+  async function createAndPlan() {
     const title = inputValue.trim();
     if (!title || saving) return;
     saving = true;
     try {
-      const created = await mealsApi.create(title);
-      onideacreated?.(created);
-      const assigned = await mealsApi.assign(created.id, date);
-      onassigned(assigned);
+      // Create as recipe in library, then plan it
+      const created = await recipesApi.create(title);
+      onrecipecreated?.(created);
+      const planned = await plannedMealsApi.plan(date, created.id);
+      onplanned(planned);
       inputValue = '';
       open = false;
     } finally {
@@ -56,11 +57,11 @@
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const exact = ideas.find((m) => m.title.toLowerCase() === inputValue.trim().toLowerCase());
+      const exact = recipes.find((r) => r.title.toLowerCase() === inputValue.trim().toLowerCase());
       if (exact) {
-        selectIdea(exact);
+        selectRecipe(exact);
       } else if (inputValue.trim()) {
-        createAndAssign();
+        createAndPlan();
       }
     } else if (e.key === 'Escape') {
       open = false;
@@ -94,21 +95,21 @@
   />
   {#if open && (filtered.length > 0 || inputValue.trim())}
     <ul class="dropdown">
-      {#each filtered as idea (idea.id)}
+      {#each filtered as recipe (recipe.id)}
         <li>
           <button
             class="dropdown-item"
-            onmousedown={(e) => { e.preventDefault(); selectIdea(idea); }}
+            onmousedown={(e) => { e.preventDefault(); selectRecipe(recipe); }}
           >
-            {idea.title}
+            {recipe.title}
           </button>
         </li>
       {/each}
-      {#if inputValue.trim() && !ideas.some((m) => m.title.toLowerCase() === inputValue.trim().toLowerCase())}
+      {#if inputValue.trim() && !recipes.some((r) => r.title.toLowerCase() === inputValue.trim().toLowerCase())}
         <li>
           <button
             class="dropdown-item new-item"
-            onmousedown={(e) => { e.preventDefault(); createAndAssign(); }}
+            onmousedown={(e) => { e.preventDefault(); createAndPlan(); }}
           >
             „{inputValue.trim()}" hinzufügen
           </button>

@@ -5,8 +5,9 @@ import com.household.domain.model.FixedEventNotFoundException
 import com.household.domain.model.HouseholdFullException
 import com.household.domain.model.InvalidCredentialsException
 import com.household.domain.model.InvalidInviteCodeException
-import com.household.domain.model.MealNotFoundException
+import com.household.domain.model.PlannedMealNotFoundException
 import com.household.domain.model.ProjectNotFoundException
+import com.household.domain.model.RecipeNotFoundException
 import com.household.domain.model.TaskNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -26,9 +27,14 @@ class GlobalExceptionHandler {
     fun handleProjectNotFound(e: ProjectNotFoundException): ErrorResponse =
         ErrorResponse(e.message ?: "Not found")
 
-    @ExceptionHandler(MealNotFoundException::class)
+    @ExceptionHandler(RecipeNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun handleMealNotFound(e: MealNotFoundException): ErrorResponse =
+    fun handleRecipeNotFound(e: RecipeNotFoundException): ErrorResponse =
+        ErrorResponse(e.message ?: "Not found")
+
+    @ExceptionHandler(PlannedMealNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlePlannedMealNotFound(e: PlannedMealNotFoundException): ErrorResponse =
         ErrorResponse(e.message ?: "Not found")
 
     @ExceptionHandler(FixedEventNotFoundException::class)

@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { meals as mealsApi, ApiError } from '$lib/api';
-  import type { Meal } from '$lib/api';
+  import { recipes as recipesApi, ApiError } from '$lib/api';
+  import type { Recipe } from '$lib/api';
 
-  let ideas = $state<Meal[]>([]);
+  let recipeList = $state<Recipe[]>([]);
   let loading = $state(true);
   let loadError = $state('');
   let newTitle = $state('');
@@ -12,14 +12,13 @@
   let editingId = $state<string | null>(null);
   let editTitle = $state('');
   let openMenuId = $state<string | null>(null);
-  let schedulingId = $state<string | null>(null);
-  let scheduleDate = $state('');
+  let menuAbove = $state(false);
 
   async function load() {
     loading = true;
     loadError = '';
     try {
-      ideas = await mealsApi.ideas();
+      recipeList = await recipesApi.list();
     } catch (e) {
       loadError = e instanceof ApiError ? e.message : 'Fehler beim Laden';
     } finally {
@@ -27,13 +26,13 @@
     }
   }
 
-  async function addIdea() {
+  async function addRecipe() {
     const title = newTitle.trim();
     if (!title || saving) return;
     saving = true;
     try {
-      const meal = await mealsApi.create(title);
-      ideas = [...ideas, meal];
+      const recipe = await recipesApi.create(title);
+      recipeList = [...recipeList, recipe];
       newTitle = '';
     } finally {
       saving = false;
@@ -41,16 +40,16 @@
     }
   }
 
-  async function deleteIdea(id: string) {
-    await mealsApi.delete(id);
-    ideas = ideas.filter((m) => m.id !== id);
+  async function deleteRecipe(id: string) {
+    await recipesApi.delete(id);
+    recipeList = recipeList.filter((r) => r.id !== id);
   }
 
   let editInputEl = $state<HTMLInputElement | null>(null);
 
-  async function startEdit(idea: Meal) {
-    editingId = idea.id;
-    editTitle = idea.title;
+  async function startEdit(recipe: Recipe) {
+    editingId = recipe.id;
+    editTitle = recipe.title;
     await Promise.resolve();
     editInputEl?.focus();
     editInputEl?.select();
@@ -61,10 +60,10 @@
     const id = editingId;
     editingId = null;
     const trimmed = editTitle.trim();
-    const original = ideas.find((m) => m.id === id);
+    const original = recipeList.find((r) => r.id === id);
     if (!trimmed || trimmed === original?.title) return;
-    const updated = await mealsApi.rename(id, trimmed);
-    ideas = ideas.map((m) => (m.id === id ? updated : m));
+    const updated = await recipesApi.rename(id, trimmed);
+    recipeList = recipeList.map((r) => (r.id === id ? updated : r));
   }
 
   function handleEditKeydown(e: KeyboardEvent) {
@@ -72,17 +71,10 @@
     if (e.key === 'Escape') { editingId = null; }
   }
 
-  async function assignMeal(id: string) {
-    if (!scheduleDate) return;
-    await mealsApi.assign(id, scheduleDate);
-    schedulingId = null;
-    scheduleDate = '';
-  }
-
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      addIdea();
+      addRecipe();
     }
   }
 
@@ -91,22 +83,22 @@
 
 <div class="page">
   <header class="page-header">
-    <h1>Mahlzeiten-Pool</h1>
+    <h1>Rezept-Bibliothek</h1>
   </header>
 
-  <p class="intro muted">Ideen sammeln und bei der Wochenplanung auf Tage einplanen.</p>
+  <p class="intro muted">Eure Lieblingsgerichte und Klassiker – immer griffbereit für die Wochenplanung.</p>
 
   <div class="add-row">
     <input
       bind:this={inputEl}
       type="text"
-      placeholder="Neue Idee hinzufügen…"
+      placeholder="Neues Rezept hinzufügen…"
       bind:value={newTitle}
       onkeydown={onKeydown}
       disabled={saving}
       class="add-input"
     />
-    <button class="add-btn" onclick={addIdea} disabled={saving || !newTitle.trim()}>
+    <button class="add-btn" onclick={addRecipe} disabled={saving || !newTitle.trim()}>
       +
     </button>
   </div>
@@ -115,17 +107,17 @@
     <div class="state-msg muted">Laden…</div>
   {:else if loadError}
     <div class="state-msg" style="color: var(--accent-rose)">{loadError}</div>
-  {:else if ideas.length === 0}
-    <p class="state-msg muted">Noch keine Ideen im Pool.</p>
+  {:else if recipeList.length === 0}
+    <p class="state-msg muted">Noch keine Rezepte in der Bibliothek.</p>
   {:else}
     <ul class="ideas-list">
-      {#each ideas as idea (idea.id)}
+      {#each recipeList as recipe (recipe.id)}
         <li class="idea-item card">
-          {#if openMenuId === idea.id}
+          {#if openMenuId === recipe.id}
             <div role="presentation" class="backdrop" onclick={() => { openMenuId = null; }}></div>
           {/if}
 
-          {#if editingId === idea.id}
+          {#if editingId === recipe.id}
             <input
               bind:this={editInputEl}
               class="edit-input"
@@ -134,47 +126,36 @@
               onkeydown={handleEditKeydown}
             />
           {:else}
-            <span class="idea-title">{idea.title}</span>
+            <span class="idea-title">{recipe.title}</span>
           {/if}
 
-          {#if editingId !== idea.id}
+          {#if editingId !== recipe.id}
             <div class="menu-wrap">
               <button
                 class="menu-btn"
-                onclick={(e) => { e.stopPropagation(); openMenuId = openMenuId === idea.id ? null : idea.id; }}
+                onclick={(e) => {
+                  e.stopPropagation();
+                  if (openMenuId !== recipe.id) {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    menuAbove = window.innerHeight - rect.bottom < 150;
+                    openMenuId = recipe.id;
+                  } else {
+                    openMenuId = null;
+                  }
+                }}
                 aria-label="Aktionen"
               >⋮</button>
 
-              {#if openMenuId === idea.id}
-                <div class="menu-dropdown" role="menu">
-                  <button class="menu-item" role="menuitem" onclick={() => { openMenuId = null; schedulingId = idea.id; scheduleDate = ''; }}>
-                    Einplanen
-                  </button>
-                  <button class="menu-item" role="menuitem" onclick={() => { openMenuId = null; startEdit(idea); }}>
+              {#if openMenuId === recipe.id}
+                <div class="menu-dropdown" class:above={menuAbove} role="menu">
+                  <button class="menu-item" role="menuitem" onclick={() => { openMenuId = null; startEdit(recipe); }}>
                     Bearbeiten
                   </button>
-                  <button class="menu-item danger" role="menuitem" onclick={() => { openMenuId = null; deleteIdea(idea.id); }}>
+                  <button class="menu-item danger" role="menuitem" onclick={() => { openMenuId = null; deleteRecipe(recipe.id); }}>
                     Löschen
                   </button>
                 </div>
               {/if}
-            </div>
-          {/if}
-
-          {#if schedulingId === idea.id}
-            <div class="schedule-row">
-              <input
-                type="date"
-                class="schedule-date"
-                bind:value={scheduleDate}
-                onkeydown={(e) => { if (e.key === 'Escape') schedulingId = null; }}
-              />
-              <button
-                class="schedule-btn"
-                disabled={!scheduleDate}
-                onclick={() => assignMeal(idea.id)}
-              >Einplanen</button>
-              <button class="schedule-cancel" onclick={() => { schedulingId = null; }}>✕</button>
             </div>
           {/if}
         </li>
@@ -307,6 +288,12 @@
     overflow: hidden;
   }
 
+  .menu-dropdown.above {
+    top: auto;
+    bottom: calc(100% + 4px);
+    box-shadow: 2px -2px 0 var(--color-border);
+  }
+
   .menu-item {
     padding: 0.625rem 0.875rem;
     text-align: left;
@@ -326,49 +313,6 @@
 
   .menu-item.danger {
     color: var(--accent-rose);
-  }
-
-  .schedule-row {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0 0.125rem;
-    border-top: 1px solid var(--color-divider);
-    margin-top: 0.375rem;
-    width: 100%;
-  }
-
-  .schedule-date {
-    flex: 1;
-    font-size: 0.875rem;
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    padding: 0.3rem 0.5rem;
-    background: var(--color-surface);
-    outline: none;
-  }
-
-  .schedule-btn {
-    font-size: 0.8125rem;
-    font-weight: 700;
-    padding: 0.3rem 0.625rem;
-    background: var(--color-text);
-    color: var(--color-surface);
-    border: var(--border-width) solid var(--color-border);
-    border-radius: var(--border-radius-sm);
-    flex-shrink: 0;
-  }
-
-  .schedule-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .schedule-cancel {
-    font-size: 0.8125rem;
-    color: var(--color-muted);
-    padding: 0.3rem 0.375rem;
-    flex-shrink: 0;
   }
 
   .state-msg {
