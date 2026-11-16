@@ -31,6 +31,8 @@
 
   let editing = $state(false);
   let menuOpen = $state(false);
+  let menuAbove = $state(false);
+  let menuBtnEl = $state<HTMLButtonElement | null>(null);
   let editTitle = $state('');
   let editDate = $state('');
   let editRecurrenceType = $state('WEEKLY');
@@ -119,13 +121,21 @@
     {#if onedit || ondelete}
       <div class="menu-wrap">
         <button
+          bind:this={menuBtnEl}
           class="menu-btn"
-          onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
+          onclick={(e) => {
+            e.stopPropagation();
+            if (!menuOpen && menuBtnEl) {
+              const rect = menuBtnEl.getBoundingClientRect();
+              menuAbove = window.innerHeight - rect.bottom < 150;
+            }
+            menuOpen = !menuOpen;
+          }}
           aria-label="Aktionen"
         >⋮</button>
 
         {#if menuOpen}
-          <div class="menu-dropdown" role="menu">
+          <div class="menu-dropdown" class:above={menuAbove} role="menu">
             {#if onedit}
               <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; startEdit(); }}>
                 Bearbeiten
@@ -286,6 +296,12 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .menu-dropdown.above {
+    top: auto;
+    bottom: calc(100% + 4px);
+    box-shadow: 2px -2px 0 var(--color-border);
   }
 
   .menu-item {

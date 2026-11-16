@@ -24,6 +24,8 @@
   const accent = $derived(taskAccent(task.id));
   let busy = $state(false);
   let menuOpen = $state(false);
+  let menuAbove = $state(false);
+  let menuBtnEl = $state<HTMLButtonElement | null>(null);
   let editing = $state(false);
   let editTitle = $state('');
   let editAssignedTo = $state<string | null | undefined>(undefined);
@@ -82,78 +84,91 @@
   class:editing
   style="--accent-bg: {accent.bg}; --accent-border: {accent.border};"
 >
-  <div class="main-row">
-    <button
-      class="check"
-      class:checked={task.status === 'DONE'}
-      onclick={handleCheck}
-      disabled={busy || (task.status === 'OPEN' && !oncomplete) || (task.status === 'DONE' && !onreopen)}
-      aria-label={task.status === 'DONE' ? 'Aufgabe wieder öffnen' : 'Aufgabe abhaken'}
-      title={task.status === 'DONE' ? 'Klicken zum Wiederherstellen' : ''}
-    >
-      {#if task.status === 'DONE'}✓{/if}
-    </button>
+  <button
+    class="check"
+    class:checked={task.status === 'DONE'}
+    onclick={handleCheck}
+    disabled={busy || (task.status === 'OPEN' && !oncomplete) || (task.status === 'DONE' && !onreopen)}
+    aria-label={task.status === 'DONE' ? 'Aufgabe wieder öffnen' : 'Aufgabe abhaken'}
+    title={task.status === 'DONE' ? 'Klicken zum Wiederherstellen' : ''}
+  >
+    {#if task.status === 'DONE'}✓{/if}
+  </button>
 
-    {#if editing}
-      <input
-        bind:this={inputEl}
-        class="title-input"
-        bind:value={editTitle}
-        onblur={saveEdit}
-        onkeydown={handleEditKeydown}
-      />
-    {:else}
-      <span class="title" class:strikethrough={task.status === 'DONE'}>{task.title}</span>
-    {/if}
+  <div class="content">
+    <div class="title-row">
+      {#if editing}
+        <input
+          bind:this={inputEl}
+          class="title-input"
+          bind:value={editTitle}
+          onblur={saveEdit}
+          onkeydown={handleEditKeydown}
+        />
+      {:else}
+        <span class="title" class:strikethrough={task.status === 'DONE'}>{task.title}</span>
+      {/if}
 
-    {#if !editing && projectTitle}
-      <span class="project-badge" title={projectTitle}>{projectTitle}</span>
-    {/if}
+      {#if !editing && task.recurrence}
+        <span class="badge" title="Wiederkehrend">↻</span>
+      {/if}
+    </div>
 
-    {#if !editing && task.recurrence}
-      <span class="badge" title="Wiederkehrend">↻</span>
-    {/if}
-
-    {#if !editing && assignedMember && assignedPalette}
-      <span
-        class="member-badge"
-        style="--chip-color: {assignedPalette.color}; --chip-bg: {assignedPalette.bg};"
-        title={assignedMember.email}
-      >
-        {assignedMember.email[0].toUpperCase()}
-      </span>
-    {/if}
-
-    {#if !editing && (onedit || ondelete || onunschedule)}
-      <div class="menu-wrap">
-        <button
-          class="menu-btn"
-          onclick={(e) => { e.stopPropagation(); menuOpen = !menuOpen; }}
-          aria-label="Aktionen"
-        >⋮</button>
-
-        {#if menuOpen}
-          <div class="menu-dropdown" role="menu">
-            {#if onedit && task.status === 'OPEN'}
-              <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; startEdit(); }}>
-                Bearbeiten
-              </button>
-            {/if}
-            {#if onunschedule && task.date}
-              <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; onunschedule?.(); }}>
-                Zurückstellen
-              </button>
-            {/if}
-            {#if ondelete}
-              <button class="menu-item danger" role="menuitem" onclick={() => { menuOpen = false; ondelete?.(); }}>
-                Löschen
-              </button>
-            {/if}
-          </div>
+    {#if !editing && (projectTitle || (assignedMember && assignedPalette))}
+      <div class="meta-row">
+        {#if projectTitle}
+          <span class="project-badge" title={projectTitle}>{projectTitle}</span>
+        {/if}
+        {#if assignedMember && assignedPalette}
+          <span
+            class="member-badge"
+            style="--chip-color: {assignedPalette.color}; --chip-bg: {assignedPalette.bg};"
+            title={assignedMember.email}
+          >
+            {assignedMember.email[0].toUpperCase()}
+          </span>
         {/if}
       </div>
     {/if}
   </div>
+
+  {#if !editing && (onedit || ondelete || onunschedule)}
+    <div class="menu-wrap">
+      <button
+        bind:this={menuBtnEl}
+        class="menu-btn"
+        onclick={(e) => {
+          e.stopPropagation();
+          if (!menuOpen && menuBtnEl) {
+            const rect = menuBtnEl.getBoundingClientRect();
+            menuAbove = window.innerHeight - rect.bottom < 150;
+          }
+          menuOpen = !menuOpen;
+        }}
+        aria-label="Aktionen"
+      >⋮</button>
+
+      {#if menuOpen}
+        <div class="menu-dropdown" class:above={menuAbove} role="menu">
+          {#if onedit && task.status === 'OPEN'}
+            <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; startEdit(); }}>
+              Bearbeiten
+            </button>
+          {/if}
+          {#if onunschedule && task.date}
+            <button class="menu-item" role="menuitem" onclick={() => { menuOpen = false; onunschedule?.(); }}>
+              Zurückstellen
+            </button>
+          {/if}
+          {#if ondelete}
+            <button class="menu-item danger" role="menuitem" onclick={() => { menuOpen = false; ondelete?.(); }}>
+              Löschen
+            </button>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   {#if menuOpen}
     <div
@@ -188,24 +203,33 @@
 <style>
   .task-item {
     display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
     background: var(--accent-bg);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-card);
     margin-bottom: 0.5rem;
+    min-width: 0;
   }
 
   .task-item.done {
     opacity: 0.6;
   }
 
-  .main-row {
+  .content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .title-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .check {
@@ -251,6 +275,12 @@
     color: var(--color-muted);
   }
 
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .project-badge {
     font-size: 0.6875rem;
     color: var(--color-muted);
@@ -260,8 +290,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 8rem;
-    flex-shrink: 0;
+    max-width: 12rem;
   }
 
   .badge {
@@ -318,6 +347,12 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .menu-dropdown.above {
+    top: auto;
+    bottom: calc(100% + 4px);
+    box-shadow: 2px -2px 0 var(--color-border);
   }
 
   .menu-item {
