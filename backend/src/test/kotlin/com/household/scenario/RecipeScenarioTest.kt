@@ -68,6 +68,39 @@ class RecipeScenarioTest {
     }
 
     @Test
+    fun `toggle favorite on recipe`() {
+        val token = registerAndGetToken("recipe-fav-${System.nanoTime()}@example.com")
+
+        // 1. Rezept erstellen — default nicht Favorit
+        val createResponse = restTemplate.postForEntity(
+            "/api/recipes",
+            HttpEntity(mapOf("title" to "Ratatouille"), authHeaders(token)),
+            Map::class.java,
+        )
+        val recipeId = createResponse.body!!["id"] as String
+        assertEquals(false, createResponse.body!!["favorite"])
+
+        // 2. Als Favorit markieren
+        val toggleOn = restTemplate.postForEntity(
+            "/api/recipes/$recipeId/toggle-favorite",
+            HttpEntity<Void>(authHeaders(token)),
+            Map::class.java,
+        )
+        assertEquals(HttpStatus.OK, toggleOn.statusCode)
+        assertEquals(true, toggleOn.body!!["favorite"])
+        assertEquals("Ratatouille", toggleOn.body!!["title"])
+
+        // 3. Favorit wieder entfernen
+        val toggleOff = restTemplate.postForEntity(
+            "/api/recipes/$recipeId/toggle-favorite",
+            HttpEntity<Void>(authHeaders(token)),
+            Map::class.java,
+        )
+        assertEquals(HttpStatus.OK, toggleOff.statusCode)
+        assertEquals(false, toggleOff.body!!["favorite"])
+    }
+
+    @Test
     fun `accessing recipes without token returns 401`() {
         val response = restTemplate.getForEntity("/api/recipes", Map::class.java)
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)

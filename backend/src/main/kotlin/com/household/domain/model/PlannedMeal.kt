@@ -35,4 +35,6 @@ data class PlannedMeal(
             )
         }
     }
+
+    fun linkRecipe(recipeId: RecipeId): PlannedMeal = copy(recipeId = recipeId)
 }

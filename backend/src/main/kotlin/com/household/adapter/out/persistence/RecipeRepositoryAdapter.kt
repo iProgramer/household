@@ -26,11 +26,13 @@ class RecipeRepositoryAdapter(
         id = id.value,
         householdId = householdId.value,
         title = title,
+        favorite = favorite,
     )
 
     private fun RecipeJpaEntity.toDomain() = Recipe(
         id = RecipeId(id),
         householdId = HouseholdId(householdId),
         title = title,
+        favorite = favorite,
     )
 }

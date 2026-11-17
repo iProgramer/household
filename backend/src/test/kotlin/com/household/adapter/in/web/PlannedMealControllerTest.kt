@@ -11,7 +11,10 @@ import com.household.domain.model.PlannedMealNotFoundException
 import com.household.domain.model.Recipe
 import com.household.domain.port.`in`.GetPlannedMealForDateUseCase
 import com.household.domain.port.`in`.GetPlannedMealsForWeekUseCase
+import com.household.domain.port.`in`.GetRecipesUseCase
+import com.household.domain.port.`in`.PlannedMealFavoriteResult
 import com.household.domain.port.`in`.PlanMealUseCase
+import com.household.domain.port.`in`.TogglePlannedMealFavoriteUseCase
 import com.household.domain.port.`in`.UnplanMealUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -41,6 +44,8 @@ class PlannedMealControllerTest {
     @MockkBean lateinit var unplanMeal: UnplanMealUseCase
     @MockkBean lateinit var getForDate: GetPlannedMealForDateUseCase
     @MockkBean lateinit var getForWeek: GetPlannedMealsForWeekUseCase
+    @MockkBean lateinit var togglePlannedMealFavorite: TogglePlannedMealFavoriteUseCase
+    @MockkBean lateinit var getRecipes: GetRecipesUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -49,13 +54,15 @@ class PlannedMealControllerTest {
             memberId = MEMBER_ID,
             householdId = HOUSEHOLD_ID,
         )
+        every { getRecipes.getRecipes(HOUSEHOLD_ID) } returns emptyList()
     }
 
     @Test
     fun `POST plans meal from recipe and returns 201`() {
-        val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta")
+        val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta").copy(favorite = true)
         val meal = PlannedMeal.fromRecipe(HOUSEHOLD_ID, MONDAY, recipe)
         every { planMeal.plan(any()) } returns meal
+        every { getRecipes.getRecipes(HOUSEHOLD_ID) } returns listOf(recipe)
 
         mockMvc.post("/api/planned-meals") {
             header("Authorization", "Bearer valid-token")
@@ -66,6 +73,7 @@ class PlannedMealControllerTest {
             jsonPath("$.title") { value("Pasta") }
             jsonPath("$.date") { value("2026-05-18") }
             jsonPath("$.recipeId") { value(recipe.id.value.toString()) }
+            jsonPath("$.favorite") { value(true) }
         }
     }
 
@@ -82,6 +90,7 @@ class PlannedMealControllerTest {
             status { isCreated() }
             jsonPath("$.title") { value("Reste") }
             jsonPath("$.recipeId") { isEmpty() }
+            jsonPath("$.favorite") { isEmpty() }
         }
     }
 
@@ -153,6 +162,21 @@ class PlannedMealControllerTest {
             header("Authorization", "Bearer valid-token")
         }.andExpect {
             status { isNotFound() }
+        }
+    }
+
+    @Test
+    fun `POST toggle-favorite toggles planned meal favorite`() {
+        val recipeId = UUID.randomUUID()
+        every { togglePlannedMealFavorite.toggleFavorite(any(), HOUSEHOLD_ID) } returns
+            PlannedMealFavoriteResult(recipeId, true)
+
+        mockMvc.post("/api/planned-meals/${UUID.randomUUID()}/toggle-favorite") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.recipeId") { value(recipeId.toString()) }
+            jsonPath("$.favorite") { value(true) }
         }
     }
 

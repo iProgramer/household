@@ -104,6 +104,13 @@
     weekPlannedMeals = weekPlannedMeals.filter((m) => m.id !== id);
   }
 
+  async function toggleMealFavorite(id: string) {
+    const result = await plannedMealsApi.toggleFavorite(id);
+    weekPlannedMeals = weekPlannedMeals.map((m) =>
+      m.id === id ? { ...m, recipeId: result.recipeId, favorite: result.favorite } : m
+    );
+  }
+
   async function completeTask(id: string) {
     await tasksApi.complete(id);
     weekTasks      = weekTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
@@ -226,6 +233,12 @@
       {#if selectedMeal}
         <div class="meal-chips-row">
           <span class="meal-chip">
+            <button
+              class="star-btn"
+              class:active={selectedMeal.favorite === true}
+              onclick={() => toggleMealFavorite(selectedMeal!.id)}
+              aria-label={selectedMeal.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
+            >{selectedMeal.favorite ? '★' : '☆'}</button>
             {selectedMeal.title}
             <button class="meal-unassign" onclick={() => unplanMeal(selectedMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
           </span>
@@ -236,7 +249,6 @@
             date={selectedDayIso}
             recipes={recipeList}
             onplanned={(meal) => { weekPlannedMeals = [...weekPlannedMeals, meal]; }}
-            onrecipecreated={(recipe) => { recipeList = [...recipeList, recipe]; }}
           />
         </div>
       {/if}
@@ -313,6 +325,12 @@
         {#if dayMeal}
           <div class="meal-chips-row">
             <span class="meal-chip">
+              <button
+                class="star-btn"
+                class:active={dayMeal.favorite === true}
+                onclick={() => toggleMealFavorite(dayMeal!.id)}
+                aria-label={dayMeal.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
+              >{dayMeal.favorite ? '★' : '☆'}</button>
               {dayMeal.title}
               <button class="meal-unassign" onclick={() => unplanMeal(dayMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
             </span>
@@ -499,6 +517,18 @@
     border-radius: var(--border-radius-pill);
     font-size: 0.8125rem;
     font-weight: 500;
+  }
+
+  .star-btn {
+    font-size: 0.875rem;
+    line-height: 1;
+    color: var(--color-muted);
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .star-btn.active {
+    color: var(--accent-amber);
   }
 
   .meal-unassign {

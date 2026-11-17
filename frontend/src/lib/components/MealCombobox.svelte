@@ -6,12 +6,10 @@
     date,
     recipes,
     onplanned,
-    onrecipecreated,
   }: {
     date: string;
     recipes: Recipe[];
     onplanned: (meal: PlannedMeal) => void;
-    onrecipecreated?: (recipe: Recipe) => void;
   } = $props();
 
   let inputValue = $state('');
@@ -19,10 +17,12 @@
   let saving = $state(false);
   let inputEl = $state<HTMLInputElement | undefined>(undefined);
 
+  let favoriteRecipes = $derived(recipes.filter((r) => r.favorite));
+
   let filtered = $derived(
     inputValue.trim().length === 0
-      ? recipes
-      : recipes.filter((r) => r.title.toLowerCase().includes(inputValue.trim().toLowerCase()))
+      ? favoriteRecipes
+      : favoriteRecipes.filter((r) => r.title.toLowerCase().includes(inputValue.trim().toLowerCase()))
   );
 
   async function selectRecipe(recipe: Recipe) {
@@ -42,10 +42,7 @@
     if (!title || saving) return;
     saving = true;
     try {
-      // Create as recipe in library, then plan it
-      const created = await recipesApi.create(title);
-      onrecipecreated?.(created);
-      const planned = await plannedMealsApi.plan(date, created.id);
+      const planned = await plannedMealsApi.plan(date, undefined, title);
       onplanned(planned);
       inputValue = '';
       open = false;
@@ -57,7 +54,7 @@
   function onKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const exact = recipes.find((r) => r.title.toLowerCase() === inputValue.trim().toLowerCase());
+      const exact = favoriteRecipes.find((r) => r.title.toLowerCase() === inputValue.trim().toLowerCase());
       if (exact) {
         selectRecipe(exact);
       } else if (inputValue.trim()) {
@@ -105,7 +102,7 @@
           </button>
         </li>
       {/each}
-      {#if inputValue.trim() && !recipes.some((r) => r.title.toLowerCase() === inputValue.trim().toLowerCase())}
+      {#if inputValue.trim() && !favoriteRecipes.some((r) => r.title.toLowerCase() === inputValue.trim().toLowerCase())}
         <li>
           <button
             class="dropdown-item new-item"

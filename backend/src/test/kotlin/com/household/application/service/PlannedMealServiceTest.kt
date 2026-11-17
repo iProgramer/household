@@ -28,8 +28,25 @@ class PlannedMealServiceTest {
     private val service = PlannedMealService(plannedMealRepository, recipeRepository)
 
     @Test
-    fun `plan from recipe creates planned meal with recipe title`() {
+    fun `plan from non-favorite recipe deletes recipe and nulls recipeId`() {
         val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta Bolognese")
+        val date = LocalDate.of(2026, 5, 20)
+        every { recipeRepository.findById(recipe.id) } returns recipe
+        every { recipeRepository.delete(recipe.id) } returns Unit
+        every { plannedMealRepository.findByHouseholdIdAndDate(HOUSEHOLD_ID, date) } returns null
+        every { plannedMealRepository.save(any()) } answers { firstArg() }
+
+        val result = service.plan(PlanMealCommand(HOUSEHOLD_ID, date, recipe.id, null))
+
+        assertEquals("Pasta Bolognese", result.title)
+        assertEquals(date, result.date)
+        assertNull(result.recipeId)
+        verify { recipeRepository.delete(recipe.id) }
+    }
+
+    @Test
+    fun `plan from favorite recipe keeps recipe and recipeId`() {
+        val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta Bolognese").copy(favorite = true)
         val date = LocalDate.of(2026, 5, 20)
         every { recipeRepository.findById(recipe.id) } returns recipe
         every { plannedMealRepository.findByHouseholdIdAndDate(HOUSEHOLD_ID, date) } returns null
@@ -38,9 +55,8 @@ class PlannedMealServiceTest {
         val result = service.plan(PlanMealCommand(HOUSEHOLD_ID, date, recipe.id, null))
 
         assertEquals("Pasta Bolognese", result.title)
-        assertEquals(date, result.date)
         assertEquals(recipe.id, result.recipeId)
-        verify(exactly = 1) { plannedMealRepository.save(any()) }
+        verify(exactly = 0) { recipeRepository.delete(any()) }
     }
 
     @Test
@@ -131,6 +147,34 @@ class PlannedMealServiceTest {
         service.getForWeek(HOUSEHOLD_ID, start)
 
         verify { plannedMealRepository.findByHouseholdIdBetween(HOUSEHOLD_ID, start, start.plusDays(6)) }
+    }
+
+    @Test
+    fun `toggleFavorite on linked meal toggles recipe favorite`() {
+        val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta").copy(favorite = true)
+        val meal = PlannedMeal.fromRecipe(HOUSEHOLD_ID, LocalDate.now(), recipe)
+        every { plannedMealRepository.findById(meal.id) } returns meal
+        every { recipeRepository.findById(recipe.id) } returns recipe
+        every { recipeRepository.save(any()) } answers { firstArg() }
+
+        val result = service.toggleFavorite(meal.id, HOUSEHOLD_ID)
+
+        assertEquals(false, result.favorite)
+        verify { recipeRepository.save(match { !it.favorite }) }
+    }
+
+    @Test
+    fun `toggleFavorite on ad-hoc meal creates favorite recipe and links it`() {
+        val meal = PlannedMeal.adHoc(HOUSEHOLD_ID, LocalDate.now(), "Reste")
+        every { plannedMealRepository.findById(meal.id) } returns meal
+        every { recipeRepository.save(any()) } answers { firstArg() }
+        every { plannedMealRepository.save(any()) } answers { firstArg() }
+
+        val result = service.toggleFavorite(meal.id, HOUSEHOLD_ID)
+
+        assertEquals(true, result.favorite)
+        verify { recipeRepository.save(match { it.title == "Reste" && it.favorite }) }
+        verify { plannedMealRepository.save(match { it.recipeId != null }) }
     }
 
     companion object {

@@ -109,6 +109,13 @@
     todayMeal = null;
   }
 
+  async function toggleMealFavorite(id: string) {
+    const result = await plannedMealsApi.toggleFavorite(id);
+    if (todayMeal) {
+      todayMeal = { ...todayMeal, recipeId: result.recipeId, favorite: result.favorite };
+    }
+  }
+
   let openTasks = $derived(todayTasks.filter((t) => t.status === 'OPEN'));
   let doneTasks = $derived(todayTasks.filter((t) => t.status === 'DONE'));
 
@@ -198,6 +205,12 @@
       <p class="section-label">Mahlzeit</p>
       {#if todayMeal}
         <div class="meal-chip card">
+          <button
+            class="star-btn"
+            class:active={todayMeal.favorite === true}
+            onclick={() => toggleMealFavorite(todayMeal!.id)}
+            aria-label={todayMeal.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
+          >{todayMeal.favorite ? '★' : '☆'}</button>
           <span>{todayMeal.title}</span>
           <button class="meal-unassign" onclick={() => unplanMeal(todayMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
         </div>
@@ -206,7 +219,6 @@
           date={todayIso}
           recipes={recipeList}
           onplanned={(meal) => { todayMeal = meal; }}
-          onrecipecreated={(recipe) => { recipeList = [...recipeList, recipe]; }}
         />
       {/if}
     </section>
@@ -285,10 +297,24 @@
   .meal-chip {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 0.5rem;
     padding: 0.5rem 0.75rem;
     background: var(--accent-lilac-bg);
     font-size: 0.9375rem;
+  }
+
+  .meal-chip span { flex: 1; }
+
+  .star-btn {
+    font-size: 1.125rem;
+    line-height: 1;
+    color: var(--color-muted);
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .star-btn.active {
+    color: var(--accent-amber);
   }
 
   .meal-unassign {

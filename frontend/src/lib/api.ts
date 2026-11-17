@@ -92,6 +92,7 @@ export interface MealNote {
 export interface Recipe {
   id: string;
   title: string;
+  favorite: boolean;
 }
 
 export interface PlannedMeal {
@@ -99,6 +100,12 @@ export interface PlannedMeal {
   date: string;
   title: string;
   recipeId: string | null;
+  favorite: boolean | null;
+}
+
+export interface TogglePlannedMealFavoriteResult {
+  recipeId: string;
+  favorite: boolean;
 }
 
 export interface Member {
@@ -195,6 +202,8 @@ export const recipes = {
   rename: (id: string, title: string) =>
     request<Recipe>(`/recipes/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
   delete: (id: string) => request<void>(`/recipes/${id}`, { method: 'DELETE' }),
+  toggleFavorite: (id: string) =>
+    request<Recipe>(`/recipes/${id}/toggle-favorite`, { method: 'POST' }),
 };
 
 // ── Planned Meals ────────────────────────────────────────────
@@ -205,6 +214,8 @@ export const plannedMeals = {
   plan: (date: string, recipeId?: string, title?: string) =>
     request<PlannedMeal>('/planned-meals', { method: 'POST', body: JSON.stringify({ date, recipeId, title }) }),
   unplan: (id: string) => request<void>(`/planned-meals/${id}`, { method: 'DELETE' }),
+  toggleFavorite: (id: string) =>
+    request<TogglePlannedMealFavoriteResult>(`/planned-meals/${id}/toggle-favorite`, { method: 'POST' }),
 };
 
 // ── Meal Notes ────────────────────────────────────────────────

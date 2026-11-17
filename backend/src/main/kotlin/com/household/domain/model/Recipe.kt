@@ -10,6 +10,7 @@ data class Recipe(
     val id: RecipeId,
     val householdId: HouseholdId,
     val title: String,
+    val favorite: Boolean = false,
 ) {
     companion object {
         fun create(householdId: HouseholdId, title: String): Recipe {
@@ -26,4 +27,6 @@ data class Recipe(
         require(newTitle.isNotBlank()) { "Title must not be blank" }
         return copy(title = newTitle.trim())
     }
+
+    fun toggleFavorite(): Recipe = copy(favorite = !favorite)
 }

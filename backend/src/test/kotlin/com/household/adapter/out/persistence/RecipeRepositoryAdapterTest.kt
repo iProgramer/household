@@ -55,6 +55,17 @@ class RecipeRepositoryAdapterTest {
     }
 
     @Test
+    fun `save and retrieve preserves favorite flag`() {
+        val recipe = Recipe.create(HOUSEHOLD_ID, "Favorit").toggleFavorite()
+
+        val saved = adapter.save(recipe)
+        val found = adapter.findById(saved.id)
+
+        assertNotNull(found)
+        assertEquals(true, found!!.favorite)
+    }
+
+    @Test
     fun `delete removes recipe`() {
         val recipe = adapter.save(Recipe.create(HOUSEHOLD_ID, "Zu löschen"))
 

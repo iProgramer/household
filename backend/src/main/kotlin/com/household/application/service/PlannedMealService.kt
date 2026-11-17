@@ -8,8 +8,11 @@ import com.household.domain.model.RecipeId
 import com.household.domain.model.RecipeNotFoundException
 import com.household.domain.port.`in`.GetPlannedMealForDateUseCase
 import com.household.domain.port.`in`.GetPlannedMealsForWeekUseCase
+import com.household.domain.model.Recipe
+import com.household.domain.port.`in`.PlannedMealFavoriteResult
 import com.household.domain.port.`in`.PlanMealCommand
 import com.household.domain.port.`in`.PlanMealUseCase
+import com.household.domain.port.`in`.TogglePlannedMealFavoriteUseCase
 import com.household.domain.port.`in`.UnplanMealUseCase
 import com.household.domain.port.out.PlannedMealRepository
 import com.household.domain.port.out.RecipeRepository
@@ -22,16 +25,18 @@ import java.time.LocalDate
 class PlannedMealService(
     private val plannedMealRepository: PlannedMealRepository,
     private val recipeRepository: RecipeRepository,
-) : PlanMealUseCase, UnplanMealUseCase, GetPlannedMealForDateUseCase, GetPlannedMealsForWeekUseCase {
+) : PlanMealUseCase, UnplanMealUseCase, GetPlannedMealForDateUseCase, GetPlannedMealsForWeekUseCase, TogglePlannedMealFavoriteUseCase {
 
     override fun plan(command: PlanMealCommand): PlannedMeal {
         require(command.recipeId != null || !command.title.isNullOrBlank()) {
             "Either recipeId or title must be provided"
         }
 
-        val meal = if (command.recipeId != null) {
-            val recipe = recipeRepository.findById(command.recipeId)
-                ?: throw RecipeNotFoundException(command.recipeId)
+        val recipe = command.recipeId?.let {
+            recipeRepository.findById(it) ?: throw RecipeNotFoundException(it)
+        }
+
+        val meal = if (recipe != null) {
             PlannedMeal.fromRecipe(command.householdId, command.date, recipe)
         } else {
             PlannedMeal.adHoc(command.householdId, command.date, command.title!!)
@@ -42,7 +47,29 @@ class PlannedMealService(
             plannedMealRepository.delete(existing.id)
         }
 
-        return plannedMealRepository.save(meal)
+        return if (recipe != null && !recipe.favorite) {
+            recipeRepository.delete(recipe.id)
+            plannedMealRepository.save(meal.copy(recipeId = null))
+        } else {
+            plannedMealRepository.save(meal)
+        }
+    }
+
+    override fun toggleFavorite(id: PlannedMealId, householdId: HouseholdId): PlannedMealFavoriteResult {
+        val meal = plannedMealRepository.findById(id) ?: throw PlannedMealNotFoundException(id)
+
+        if (meal.recipeId != null) {
+            val recipe = recipeRepository.findById(meal.recipeId)
+                ?: throw RecipeNotFoundException(meal.recipeId)
+            val updated = recipeRepository.save(recipe.toggleFavorite())
+            return PlannedMealFavoriteResult(updated.id.value, updated.favorite)
+        } else {
+            val newRecipe = recipeRepository.save(
+                Recipe.create(householdId, meal.title).copy(favorite = true)
+            )
+            plannedMealRepository.save(meal.linkRecipe(newRecipe.id))
+            return PlannedMealFavoriteResult(newRecipe.id.value, true)
+        }
     }
 
     override fun unplan(id: PlannedMealId) {

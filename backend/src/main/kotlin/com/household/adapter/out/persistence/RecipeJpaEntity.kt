@@ -11,4 +11,5 @@ class RecipeJpaEntity(
     @Id val id: UUID,
     val householdId: UUID,
     val title: String,
+    val favorite: Boolean,
 )

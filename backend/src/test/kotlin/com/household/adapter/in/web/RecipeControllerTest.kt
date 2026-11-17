@@ -12,6 +12,7 @@ import com.household.domain.port.`in`.CreateRecipeUseCase
 import com.household.domain.port.`in`.DeleteRecipeUseCase
 import com.household.domain.port.`in`.GetRecipesUseCase
 import com.household.domain.port.`in`.RenameRecipeUseCase
+import com.household.domain.port.`in`.ToggleFavoriteUseCase
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify
@@ -40,6 +41,7 @@ class RecipeControllerTest {
     @MockkBean lateinit var getRecipes: GetRecipesUseCase
     @MockkBean lateinit var renameRecipe: RenameRecipeUseCase
     @MockkBean lateinit var deleteRecipe: DeleteRecipeUseCase
+    @MockkBean lateinit var toggleFavorite: ToggleFavoriteUseCase
 
     @BeforeEach
     fun setupAuth() {
@@ -63,6 +65,7 @@ class RecipeControllerTest {
             status { isCreated() }
             jsonPath("$.title") { value("Pasta Bolognese") }
             jsonPath("$.id") { isNotEmpty() }
+            jsonPath("$.favorite") { value(false) }
         }
     }
 
@@ -130,6 +133,19 @@ class RecipeControllerTest {
             header("Authorization", "Bearer valid-token")
         }.andExpect {
             status { isNoContent() }
+        }
+    }
+
+    @Test
+    fun `POST toggle-favorite toggles recipe favorite`() {
+        val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta").toggleFavorite()
+        every { toggleFavorite.toggleFavorite(recipe.id) } returns recipe
+
+        mockMvc.post("/api/recipes/${recipe.id.value}/toggle-favorite") {
+            header("Authorization", "Bearer valid-token")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.favorite") { value(true) }
         }
     }
 

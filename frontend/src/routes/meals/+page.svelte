@@ -45,6 +45,11 @@
     recipeList = recipeList.filter((r) => r.id !== id);
   }
 
+  async function toggleFavorite(id: string) {
+    const updated = await recipesApi.toggleFavorite(id);
+    recipeList = recipeList.map((r) => (r.id === id ? updated : r));
+  }
+
   let editInputEl = $state<HTMLInputElement | null>(null);
 
   async function startEdit(recipe: Recipe) {
@@ -116,6 +121,13 @@
           {#if openMenuId === recipe.id}
             <div role="presentation" class="backdrop" onclick={() => { openMenuId = null; }}></div>
           {/if}
+
+          <button
+            class="star-btn"
+            class:active={recipe.favorite}
+            onclick={() => toggleFavorite(recipe.id)}
+            aria-label={recipe.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
+          >{recipe.favorite ? '★' : '☆'}</button>
 
           {#if editingId === recipe.id}
             <input
@@ -232,6 +244,18 @@
     justify-content: space-between;
     flex-wrap: wrap;
     padding: 0.625rem 1rem;
+  }
+
+  .star-btn {
+    font-size: 1.125rem;
+    line-height: 1;
+    color: var(--color-muted);
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .star-btn.active {
+    color: var(--accent-amber);
   }
 
   .idea-title {

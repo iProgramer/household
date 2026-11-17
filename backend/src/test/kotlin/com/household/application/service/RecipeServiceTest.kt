@@ -80,6 +80,26 @@ class RecipeServiceTest {
         verify { recipeRepository.delete(id) }
     }
 
+    @Test
+    fun `toggleFavorite toggles recipe favorite flag`() {
+        val recipe = Recipe.create(HOUSEHOLD_ID, "Pasta")
+        every { recipeRepository.findById(recipe.id) } returns recipe
+        every { recipeRepository.save(any()) } answers { firstArg() }
+
+        val result = service.toggleFavorite(recipe.id)
+
+        assertEquals(true, result.favorite)
+        verify { recipeRepository.save(match { it.favorite }) }
+    }
+
+    @Test
+    fun `toggleFavorite throws RecipeNotFoundException when recipe does not exist`() {
+        val unknownId = RecipeId(UUID.randomUUID())
+        every { recipeRepository.findById(unknownId) } returns null
+
+        assertThrows<RecipeNotFoundException> { service.toggleFavorite(unknownId) }
+    }
+
     companion object {
         val HOUSEHOLD_ID = HouseholdId(UUID.fromString("00000000-0000-0000-0000-000000000001"))
     }

@@ -8,6 +8,7 @@ import com.household.domain.port.`in`.CreateRecipeUseCase
 import com.household.domain.port.`in`.DeleteRecipeUseCase
 import com.household.domain.port.`in`.GetRecipesUseCase
 import com.household.domain.port.`in`.RenameRecipeUseCase
+import com.household.domain.port.`in`.ToggleFavoriteUseCase
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -28,6 +29,7 @@ class RecipeController(
     private val getRecipes: GetRecipesUseCase,
     private val renameRecipe: RenameRecipeUseCase,
     private val deleteRecipe: DeleteRecipeUseCase,
+    private val toggleFavorite: ToggleFavoriteUseCase,
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -52,6 +54,10 @@ class RecipeController(
         @PathVariable id: UUID,
         @AuthenticationPrincipal principal: AuthenticatedMember,
     ) = deleteRecipe.delete(RecipeId(id))
+
+    @PostMapping("/{id}/toggle-favorite")
+    fun toggleFavorite(@PathVariable id: UUID): RecipeResponse =
+        RecipeResponse.from(toggleFavorite.toggleFavorite(RecipeId(id)))
 }
 
 data class CreateRecipeRequest(val title: String)
@@ -60,11 +66,13 @@ data class RenameRecipeRequest(val title: String)
 data class RecipeResponse(
     val id: UUID,
     val title: String,
+    val favorite: Boolean,
 ) {
     companion object {
         fun from(recipe: Recipe) = RecipeResponse(
             id = recipe.id.value,
             title = recipe.title,
+            favorite = recipe.favorite,
         )
     }
 }
