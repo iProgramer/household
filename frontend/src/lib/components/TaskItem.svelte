@@ -224,6 +224,7 @@
     min-height: 2rem;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 0.25rem;
   }
 

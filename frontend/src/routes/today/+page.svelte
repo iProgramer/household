@@ -160,13 +160,13 @@
       <p class="section-label">Mahlzeit</p>
       {#if todayMeal}
         <div class="meal-chip card">
+          <span>{todayMeal.title}</span>
           <button
             class="star-btn"
             class:active={todayMeal.favorite === true}
             onclick={() => toggleMealFavorite(todayMeal!.id)}
             aria-label={todayMeal.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
           >{todayMeal.favorite ? '★' : '☆'}</button>
-          <span>{todayMeal.title}</span>
           <button class="meal-unassign" onclick={() => unplanMeal(todayMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
         </div>
       {:else}

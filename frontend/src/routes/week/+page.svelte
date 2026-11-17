@@ -184,13 +184,13 @@
       {#if selectedMeal}
         <div class="meal-chips-row">
           <span class="meal-chip">
+            {selectedMeal.title}
             <button
               class="star-btn"
               class:active={selectedMeal.favorite === true}
               onclick={() => toggleMealFavorite(selectedMeal!.id)}
               aria-label={selectedMeal.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
             >{selectedMeal.favorite ? '★' : '☆'}</button>
-            {selectedMeal.title}
             <button class="meal-unassign" onclick={() => unplanMeal(selectedMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
           </span>
         </div>
@@ -245,13 +245,13 @@
         {#if dayMeal}
           <div class="meal-chips-row">
             <span class="meal-chip">
+              {dayMeal.title}
               <button
                 class="star-btn"
                 class:active={dayMeal.favorite === true}
                 onclick={() => toggleMealFavorite(dayMeal!.id)}
                 aria-label={dayMeal.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
               >{dayMeal.favorite ? '★' : '☆'}</button>
-              {dayMeal.title}
               <button class="meal-unassign" onclick={() => unplanMeal(dayMeal!.id)} title="Entplanen" aria-label="Entfernen">✕</button>
             </span>
           </div>
