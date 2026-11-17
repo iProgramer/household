@@ -122,13 +122,6 @@
             <div role="presentation" class="backdrop" onclick={() => { openMenuId = null; }}></div>
           {/if}
 
-          <button
-            class="star-btn"
-            class:active={recipe.favorite}
-            onclick={() => toggleFavorite(recipe.id)}
-            aria-label={recipe.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
-          >{recipe.favorite ? '★' : '☆'}</button>
-
           {#if editingId === recipe.id}
             <input
               bind:this={editInputEl}
@@ -142,6 +135,12 @@
           {/if}
 
           {#if editingId !== recipe.id}
+            <button
+              class="star-btn"
+              class:active={recipe.favorite}
+              onclick={() => toggleFavorite(recipe.id)}
+              aria-label={recipe.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
+            >{recipe.favorite ? '★' : '☆'}</button>
             <div class="menu-wrap">
               <button
                 class="menu-btn"
