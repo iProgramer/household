@@ -23,16 +23,11 @@ Fachliches Modell – keine technische Implementierung.
 - Kann wiederkehrend sein (→ Wiederholungsregel)
 
 ### Wiederholungsregel (Recurrence)
-- Gehört zu einer Aufgabe oder einem festen Termin
+- Gehört zu einer Aufgabe
 - Definiert das Intervall: täglich | wöchentlich | 14-tägig | monatlich | bestimmter Wochentag
 - Beim Erledigen einer wiederkehrenden Aufgabe wird die nächste Instanz erzeugt
 - Einfache Vorwärts-Erzeugung, keine Historie vergangener Instanzen
-
-### Fester Termin (Fixed Event)
-- Titel + Datum
-- Rein informativ (kein Status, nicht "erledigbar")
-- Kann wiederkehrend sein
-- Beispiele: Müllabfuhr, Handwerkertermin
+- Beispiele: Saugen (wöchentlich), Gelbe Säcke (14-tägig), Fenster putzen (monatlich)
 
 ### Projekt (Project)
 - Titel (Pflicht)
@@ -56,8 +51,6 @@ Haushalt
 ├── Aufgabe (0..n)
 │   ├── optional: Wiederholungsregel
 │   └── optional: gehört zu Projekt
-├── Fester Termin (0..n)
-│   └── optional: Wiederholungsregel
 ├── Projekt (0..n)
 │   ├── Ziel
 │   └── Teilschritte (= Aufgaben)
@@ -68,7 +61,6 @@ Haushalt
 
 1. Eine Aufgabe gehört zu maximal einem Projekt.
 2. Teilschritte eines Projekts sind normale Aufgaben mit einer Projektzugehörigkeit.
-3. Feste Termine haben keinen Status – sie existieren oder nicht.
-4. Eine wiederkehrende Aufgabe existiert immer nur als aktuelle Instanz (kein Backlog vergangener Instanzen).
-5. Zuweisung ist immer optional und jederzeit änderbar.
-6. Der Essensplan-Eintrag ist pro Tag eindeutig (max. 1 Eintrag).
+3. Eine wiederkehrende Aufgabe existiert immer nur als aktuelle Instanz (kein Backlog vergangener Instanzen).
+4. Zuweisung ist immer optional und jederzeit änderbar.
+5. Der Essensplan-Eintrag ist pro Tag eindeutig (max. 1 Eintrag).

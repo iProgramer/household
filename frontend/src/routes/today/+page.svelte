@@ -1,26 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fixedEvents as eventsApi, recipes as recipesApi, plannedMeals as plannedMealsApi, projects as projectsApi, ApiError } from '$lib/api';
-  import type { Task, FixedEvent, Recipe, PlannedMeal } from '$lib/api';
-  import FixedEventItem from '$lib/components/FixedEventItem.svelte';
+  import { recipes as recipesApi, plannedMeals as plannedMealsApi, projects as projectsApi, ApiError } from '$lib/api';
+  import type { Task, Recipe, PlannedMeal } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import { tasks as tasksApi } from '$lib/api';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import PersonAvatar from '$lib/components/PersonAvatar.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
-  import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
   import MealCombobox from '$lib/components/MealCombobox.svelte';
   import { isoDate, formatDate } from '$lib/utils/dates';
 
   let todayTasks = $state<Task[]>([]);
   let overdueTasks = $state<Task[]>([]);
-  let todayEvents = $state<FixedEvent[]>([]);
   let todayMeal = $state<PlannedMeal | null>(null);
   let recipeList = $state<Recipe[]>([]);
   let projectsMap = $state<Map<string, string>>(new Map());
   let loading = $state(true);
   let loadError = $state('');
-  let showEventForm = $state(false);
 
   const today = new Date();
   const todayIso = isoDate(today);
@@ -38,17 +34,15 @@
     loading = true;
     loadError = '';
     try {
-      const [t, o, e, meal, recs, projs] = await Promise.all([
+      const [t, o, meal, recs, projs] = await Promise.all([
         tasksApi.today(),
         tasksApi.overdue(),
-        eventsApi.today(),
         plannedMealsApi.forDate(todayIso),
         recipesApi.list(),
         projectsApi.list(),
       ]);
       todayTasks = t;
       overdueTasks = o;
-      todayEvents = e;
       todayMeal = meal;
       recipeList = recs;
       projectsMap = new Map(projs.map((p) => [p.id, p.title]));
@@ -92,16 +86,6 @@
   async function completeOverdue(id: string) {
     await tasksApi.complete(id);
     overdueTasks = overdueTasks.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t));
-  }
-
-  async function editEvent(id: string, data: { title: string; date: string; recurrence: import('$lib/api').Recurrence }) {
-    const updated = await eventsApi.update(id, data);
-    todayEvents = todayEvents.map((e) => (e.id === id ? updated : e));
-  }
-
-  async function deleteEvent(id: string) {
-    await eventsApi.delete(id);
-    todayEvents = todayEvents.filter((e) => e.id !== id);
   }
 
   async function unplanMeal(id: string) {
@@ -149,35 +133,6 @@
         {/each}
       </section>
     {/if}
-
-    <section class="section">
-      <div class="section-header">
-        <p class="section-label">Termine</p>
-        <button class="add-section-btn" onclick={() => { showEventForm = !showEventForm; }}>
-          {showEventForm ? '✕' : '+ Termin'}
-        </button>
-      </div>
-
-      {#if showEventForm}
-        <CreateFixedEventForm
-          defaultDate={todayIso}
-          oncreated={(ev) => { todayEvents = [...todayEvents, ev]; showEventForm = false; }}
-          oncancel={() => { showEventForm = false; }}
-        />
-      {/if}
-
-      {#each todayEvents as event (event.id)}
-        <FixedEventItem
-          {event}
-          onedit={(data) => editEvent(event.id, data)}
-          ondelete={() => deleteEvent(event.id)}
-        />
-      {/each}
-
-      {#if todayEvents.length === 0 && !showEventForm}
-        <p class="muted empty-hint">Keine Termine heute</p>
-      {/if}
-    </section>
 
     <section class="section">
       <p class="section-label">Aufgaben</p>
@@ -241,37 +196,6 @@
 
   .section {
     margin-bottom: 1.75rem;
-  }
-
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-
-  .section-header .section-label {
-    margin-bottom: 0;
-  }
-
-  .add-section-btn {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--color-muted);
-    padding: 0.2rem 0.5rem;
-    border: var(--border-width) solid var(--color-divider);
-    border-radius: var(--border-radius-pill);
-    background: var(--color-surface);
-  }
-
-  .add-section-btn:hover {
-    color: var(--color-text);
-    border-color: var(--color-border);
-  }
-
-  .empty-hint {
-    font-size: 0.875rem;
-    padding: 0.25rem 0;
   }
 
   .done-section {

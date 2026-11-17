@@ -1,12 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { tasks as tasksApi, fixedEvents as eventsApi, recipes as recipesApi, plannedMeals as plannedMealsApi, projects as projectsApi, ApiError } from '$lib/api';
-  import type { Task, FixedEvent, Recipe, PlannedMeal } from '$lib/api';
-  import FixedEventItem from '$lib/components/FixedEventItem.svelte';
+  import { tasks as tasksApi, recipes as recipesApi, plannedMeals as plannedMealsApi, projects as projectsApi, ApiError } from '$lib/api';
+  import type { Task, Recipe, PlannedMeal } from '$lib/api';
   import { authStore } from '$lib/stores/auth';
   import TaskItem from '$lib/components/TaskItem.svelte';
   import AddTaskForm from '$lib/components/AddTaskForm.svelte';
-  import CreateFixedEventForm from '$lib/components/CreateFixedEventForm.svelte';
   import MealCombobox from '$lib/components/MealCombobox.svelte';
   import { isoDate, getWeekMonday, addDays, getISOWeek, formatWeekRange } from '$lib/utils/dates';
 
@@ -23,7 +21,6 @@
   let isCurrentWeek = $derived(weekOffset === 0);
 
   let weekTasks         = $state<Task[]>([]);
-  let weekEvents        = $state<FixedEvent[]>([]);
   let weekPlannedMeals  = $state<PlannedMeal[]>([]);
   let recipeList        = $state<Recipe[]>([]);
   let unplannedTasks    = $state<Task[]>([]);
@@ -46,28 +43,21 @@
     }
   });
 
-  let showEventForm      = $state(false);
-  let overviewEventForms = $state<Record<string, boolean>>({});
-
   let currentMemberId = $state<string | null>(null);
   const unsubAuth = authStore.subscribe((s) => { currentMemberId = s.memberId; });
 
   async function load() {
     loading = true;
     loadError = '';
-    showEventForm = false;
-    overviewEventForms = {};
     try {
-      const [wt, we, wm, recs, ut, projs] = await Promise.all([
+      const [wt, wm, recs, ut, projs] = await Promise.all([
         tasksApi.week(mondayIso),
-        eventsApi.week(mondayIso),
         plannedMealsApi.forWeek(mondayIso),
         recipesApi.list(),
         tasksApi.unplanned(),
         projectsApi.list(),
       ]);
       weekTasks        = wt;
-      weekEvents       = we;
       weekPlannedMeals = wm;
       recipeList       = recs;
       unplannedTasks   = ut;
@@ -86,18 +76,7 @@
   });
 
   function tasksForDay(dayIso: string)  { return weekTasks.filter((t) => t.date === dayIso); }
-  function eventsForDay(dayIso: string) { return weekEvents.filter((e) => e.date === dayIso); }
   function mealForDay(dayIso: string): PlannedMeal | undefined  { return weekPlannedMeals.find((m) => m.date === dayIso); }
-
-  async function editEvent(id: string, data: { title: string; date: string; recurrence: import('$lib/api').Recurrence }) {
-    const updated = await eventsApi.update(id, data);
-    weekEvents = weekEvents.map((e) => (e.id === id ? updated : e));
-  }
-
-  async function deleteEvent(id: string) {
-    await eventsApi.delete(id);
-    weekEvents = weekEvents.filter((e) => e.id !== id);
-  }
 
   async function unplanMeal(id: string) {
     await plannedMealsApi.unplan(id);
@@ -151,7 +130,6 @@
 
   let selectedDayIso   = $derived(isoDate(days[selectedDayIdx]));
   let selectedTasks    = $derived(tasksForDay(selectedDayIso));
-  let selectedEvents   = $derived(eventsForDay(selectedDayIso));
   let selectedMeal     = $derived(mealForDay(selectedDayIso));
 
   onMount(() => unsubAuth);
@@ -193,7 +171,7 @@
           class="day-btn"
           class:active={selectedDayIdx === i}
           class:today={iso === todayIso}
-          onclick={() => { selectedDayIdx = i; showEventForm = false; }}
+          onclick={() => { selectedDayIdx = i; }}
         >
           <span class="day-label">{DAY_LABELS[i]}</span>
           <span class="day-num">{day.getDate()}</span>
@@ -203,33 +181,6 @@
     </div>
 
     <div class="day-detail">
-      <div class="detail-section-header">
-        <span class="section-label" style="margin-bottom:0">Termine</span>
-        <button class="add-section-btn" onclick={() => { showEventForm = !showEventForm; }}>
-          {showEventForm ? '✕' : '+ Termin'}
-        </button>
-      </div>
-
-      {#if showEventForm}
-        <CreateFixedEventForm
-          defaultDate={selectedDayIso}
-          oncreated={(ev) => { weekEvents = [...weekEvents, ev]; showEventForm = false; }}
-          oncancel={() => { showEventForm = false; }}
-        />
-      {/if}
-
-      {#if selectedEvents.length > 0}
-        <div class="events-list">
-          {#each selectedEvents as event (event.id)}
-            <FixedEventItem
-              {event}
-              onedit={(data) => editEvent(event.id, data)}
-              ondelete={() => deleteEvent(event.id)}
-            />
-          {/each}
-        </div>
-      {/if}
-
       {#if selectedMeal}
         <div class="meal-chips-row">
           <span class="meal-chip">
@@ -282,45 +233,14 @@
     {#each days as day, i}
       {@const iso = isoDate(day)}
       {@const dayTasks  = tasksForDay(iso)}
-      {@const dayEvents = eventsForDay(iso)}
       {@const dayMeal   = mealForDay(iso)}
-      {@const isEmpty   = dayTasks.length === 0 && dayEvents.length === 0 && !dayMeal}
+      {@const isEmpty   = dayTasks.length === 0 && !dayMeal}
 
       <div class="agenda-day" class:today={iso === todayIso} class:empty={isEmpty}>
-        <div class="agenda-day-header">
-          <div class="agenda-day-label">
-            <span class="agenda-weekday">{DAY_FULL[i]}</span>
-            <span class="agenda-date muted">{day.getDate()}.{day.getMonth() + 1}.</span>
-          </div>
-          <div class="agenda-day-actions">
-            <button
-              class="add-section-btn"
-              onclick={() => { overviewEventForms = { ...overviewEventForms, [iso]: !overviewEventForms[iso] }; }}
-            >
-              {overviewEventForms[iso] ? '✕' : '+ Termin'}
-            </button>
-          </div>
+        <div class="agenda-day-label">
+          <span class="agenda-weekday">{DAY_FULL[i]}</span>
+          <span class="agenda-date muted">{day.getDate()}.{day.getMonth() + 1}.</span>
         </div>
-
-        {#if overviewEventForms[iso]}
-          <CreateFixedEventForm
-            defaultDate={iso}
-            oncreated={(ev) => { weekEvents = [...weekEvents, ev]; overviewEventForms = { ...overviewEventForms, [iso]: false }; }}
-            oncancel={() => { overviewEventForms = { ...overviewEventForms, [iso]: false }; }}
-          />
-        {/if}
-
-        {#if dayEvents.length > 0}
-          <div class="events-list">
-            {#each dayEvents as event (event.id)}
-              <FixedEventItem
-                {event}
-                onedit={(data) => editEvent(event.id, data)}
-                ondelete={() => deleteEvent(event.id)}
-              />
-            {/each}
-          </div>
-        {/if}
 
         {#if dayMeal}
           <div class="meal-chips-row">
@@ -484,27 +404,6 @@
   /* Day detail (tag view) */
   .day-detail { margin-bottom: 1.75rem; }
 
-  .detail-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-
-  .add-section-btn {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--color-muted);
-    padding: 0.2rem 0.5rem;
-    border: var(--border-width) solid var(--color-divider);
-    border-radius: var(--border-radius-pill);
-    background: var(--color-surface);
-  }
-
-  .add-section-btn:hover { color: var(--color-text); border-color: var(--color-border); }
-
-  .events-list { display: flex; flex-direction: column; margin-bottom: 0.25rem; }
-
   .meal-chips-row { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-bottom: 0.5rem; }
 
   .meal-chip {
@@ -558,14 +457,8 @@
     opacity: 0.5;
   }
 
-  .agenda-day-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
-
   .agenda-day-label {
+    margin-bottom: 0.5rem;
     display: flex;
     align-items: baseline;
     gap: 0.5rem;

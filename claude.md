@@ -2,7 +2,7 @@
 
 ## Projekt
 
-Haushalts-App für einen Paarhaushalt (genau 2 Personen). Aufgaben-, Termin- und Projektorganisation mit Tages-/Wochenüberblick.
+Haushalts-App für einen Paarhaushalt (genau 2 Personen). Aufgaben- und Projektorganisation mit Tages-/Wochenüberblick.
 
 ## Tech-Stack
 
@@ -35,7 +35,7 @@ Iteration 1 implementiert: Task-CRUD (erstellen, Tagesansicht, abhaken) mit voll
 
 - Sprache in Code und Commits: Englisch
 - Sprache in Produktdokumentation: Deutsch
-- Domain-Begriffe: Household, Member, Task, Recurrence, Fixed Event, Project, Meal Note
+- Domain-Begriffe: Household, Member, Task, Recurrence, Project, Recipe, Planned Meal
 
 ## Commit-Format
 

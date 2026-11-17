@@ -1,7 +1,6 @@
 package com.household.adapter.`in`.web
 
 import com.household.domain.model.EmailAlreadyExistsException
-import com.household.domain.model.FixedEventNotFoundException
 import com.household.domain.model.HouseholdFullException
 import com.household.domain.model.InvalidCredentialsException
 import com.household.domain.model.InvalidInviteCodeException
@@ -35,11 +34,6 @@ class GlobalExceptionHandler {
     @ExceptionHandler(PlannedMealNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlePlannedMealNotFound(e: PlannedMealNotFoundException): ErrorResponse =
-        ErrorResponse(e.message ?: "Not found")
-
-    @ExceptionHandler(FixedEventNotFoundException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    fun handleFixedEventNotFound(e: FixedEventNotFoundException): ErrorResponse =
         ErrorResponse(e.message ?: "Not found")
 
     @ExceptionHandler(InvalidCredentialsException::class)

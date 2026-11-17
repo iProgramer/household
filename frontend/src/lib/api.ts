@@ -77,13 +77,6 @@ export interface ProjectDetail {
   tasks: Task[];
 }
 
-export interface FixedEvent {
-  id: string;
-  title: string;
-  date: string;
-  recurrence: Recurrence | null;
-}
-
 export interface MealNote {
   date: string;
   note: string;
@@ -157,18 +150,6 @@ export const tasks = {
   update: (id: string, data: { date?: string | null; assignedTo?: string | null; title?: string }) =>
     request<Task>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/tasks/${id}`, { method: 'DELETE' }),
-};
-
-// ── Fixed Events ──────────────────────────────────────────────
-
-export const fixedEvents = {
-  today: () => request<FixedEvent[]>('/fixed-events/today'),
-  week: (startDate: string) => request<FixedEvent[]>(`/fixed-events/week?startDate=${startDate}`),
-  create: (data: { title: string; date: string; recurrence: Recurrence }) =>
-    request<FixedEvent>('/fixed-events', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: { title: string; date: string; recurrence: Recurrence }) =>
-    request<FixedEvent>(`/fixed-events/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  delete: (id: string) => request<void>(`/fixed-events/${id}`, { method: 'DELETE' }),
 };
 
 // ── Projects ──────────────────────────────────────────────────
