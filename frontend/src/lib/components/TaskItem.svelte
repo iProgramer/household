@@ -221,6 +221,7 @@
   .content {
     flex: 1;
     min-width: 0;
+    min-height: 2rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
