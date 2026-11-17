@@ -14,6 +14,14 @@
   let openMenuId = $state<string | null>(null);
   let menuAbove = $state(false);
 
+  type Filter = 'all' | 'favorites' | 'ideas';
+  let filter = $state<Filter>('all');
+  let filteredRecipes = $derived(
+    filter === 'all' ? recipeList
+    : filter === 'favorites' ? recipeList.filter((r) => r.favorite)
+    : recipeList.filter((r) => !r.favorite)
+  );
+
   async function load() {
     loading = true;
     loadError = '';
@@ -115,8 +123,17 @@
   {:else if recipeList.length === 0}
     <p class="state-msg muted">Noch keine Rezepte in der Bibliothek.</p>
   {:else}
+    <div class="filter-toggle">
+      <button class:active={filter === 'all'} onclick={() => { filter = 'all'; }}>Alle</button>
+      <button class:active={filter === 'favorites'} onclick={() => { filter = 'favorites'; }}>Favoriten</button>
+      <button class:active={filter === 'ideas'} onclick={() => { filter = 'ideas'; }}>Ideen</button>
+    </div>
+
+    {#if filteredRecipes.length === 0}
+      <p class="state-msg muted">Keine Rezepte in dieser Kategorie.</p>
+    {:else}
     <ul class="ideas-list">
-      {#each recipeList as recipe (recipe.id)}
+      {#each filteredRecipes as recipe (recipe.id)}
         <li class="idea-item card">
           {#if openMenuId === recipe.id}
             <div role="presentation" class="backdrop" onclick={() => { openMenuId = null; }}></div>
@@ -172,6 +189,7 @@
         </li>
       {/each}
     </ul>
+    {/if}
   {/if}
 </div>
 
@@ -228,6 +246,32 @@
   .add-btn:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  .filter-toggle {
+    display: flex;
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 1.25rem;
+  }
+
+  .filter-toggle button {
+    flex: 1;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    border-right: var(--border-width) solid var(--color-border);
+  }
+
+  .filter-toggle button:last-child { border-right: none; }
+
+  .filter-toggle button.active {
+    background: var(--color-text);
+    color: var(--color-surface);
+    font-weight: 700;
   }
 
   .ideas-list {
